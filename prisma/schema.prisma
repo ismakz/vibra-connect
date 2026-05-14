@@ -1,0 +1,415 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  BUSINESS_OWNER
+  AGENT
+  CLIENT
+}
+
+enum BusinessStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  REJECTED
+}
+
+enum SubscriptionPlan {
+  FREE
+  STARTER
+  PRO
+  PREMIUM
+  /// Mise en avant marketplace (Bizapay / sponsoring)
+  SPONSORED
+}
+
+enum SubscriptionStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum PublicationStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ContactType {
+  WHATSAPP
+  CALL
+  DIRECTION
+  SHARE
+  TELECOM
+  MESSAGE
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWED
+  CLOSED
+}
+
+enum IntegrationStatus {
+  NOT_LINKED
+  PENDING
+  LINKED
+  ERROR
+}
+
+enum SourceApp {
+  VIBRA_CONNECT
+  BIZAFLOW
+  BIZAFLOW_ERP
+  BIZAFLOW_TELECOM
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum PaymentMethod {
+  BIZAPAY
+  AIRTEL_MONEY_RDC
+  MTN_MOMO_RWANDA
+  MPESA
+  ORANGE_MONEY
+  MTN_MOBILE_MONEY
+  MANUAL
+  CARD
+}
+
+enum ContactPreference {
+  WHATSAPP
+  PHONE
+  BIZAFLOW_TELECOM
+  INTERNAL_MESSAGE
+  EMAIL
+}
+
+model User {
+  id             String         @id @default(cuid())
+  name           String?
+  email          String         @unique
+  passwordHash   String
+  role           UserRole       @default(CLIENT)
+  phone          String?
+  /// URL publique de l’avatar (pas de stockage fichier côté VIBRA en MVP).
+  avatarUrl      String?
+  cityId         String?
+  contactPreference ContactPreference @default(WHATSAPP)
+  referredByAgentId String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @default(now()) @updatedAt
+  businesses     Business[]
+  reviews        Review[]
+  subscriptions  Subscription[]
+  agentProfile   AgentProfile?
+  referredByAgent AgentProfile? @relation("ReferredUsers", fields: [referredByAgentId], references: [id])
+  reports        Report[]
+  payments       Payment[]      @relation("PayerPayments")
+  approvedPayments Payment[]    @relation("ApproverPayments")
+  city           City?          @relation(fields: [cityId], references: [id])
+
+  @@index([cityId])
+}
+
+model City {
+  id         String     @id @default(cuid())
+  name       String     @unique
+  slug       String     @unique
+  isActive   Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  businesses Business[]
+  agentProfiles AgentProfile[]
+  users      User[]
+  bizaflowCityId String?
+  integrationStatus IntegrationStatus @default(NOT_LINKED)
+}
+
+model Category {
+  id              String           @id @default(cuid())
+  name            String           @unique
+  slug            String           @unique
+  description     String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  businesses      Business[]
+  productServices ProductService[]
+}
+
+model Business {
+  id                 String              @id @default(cuid())
+  ownerId            String
+  categoryId         String
+  cityId             String
+  name               String
+  slug               String              @unique
+  description        String?
+  address            String?
+  email              String?
+  phone              String?
+  whatsapp           String?
+  phoneNumber        String?
+  whatsappNumber     String?
+  bizaflowTelecomNumber String?
+  bizaflowTelecomUid String?
+  contactPreference  ContactPreference @default(WHATSAPP)
+  bannerUrl          String?
+  logoUrl            String?
+  galleryImages      String[]            @default([])
+  bizaflowTenantId   String?
+  bizaflowBusinessId String?
+  bizaflowOwnerUid   String?
+  sourceApp          SourceApp          @default(VIBRA_CONNECT)
+  integrationStatus  IntegrationStatus  @default(NOT_LINKED)
+  externalReferenceId String?
+  status             BusinessStatus      @default(PENDING)
+  verified           Boolean             @default(false)
+  featuredUntil      DateTime?
+  subscriptionPlan   SubscriptionPlan    @default(FREE)
+  subscriptionStatus SubscriptionStatus  @default(PENDING)
+  expiresAt          DateTime?
+  openingHours       String?
+  referralAgentId    String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  owner              User                @relation(fields: [ownerId], references: [id])
+  city               City                @relation(fields: [cityId], references: [id])
+  category           Category            @relation(fields: [categoryId], references: [id])
+  referralAgent      AgentProfile?       @relation("ReferredBusinesses", fields: [referralAgentId], references: [id])
+  productServices    ProductService[]
+  promotions         Promotion[]
+  reviews            Review[]
+  subscriptions      Subscription[]
+  viewEvents         BusinessViewEvent[]
+  contactClickEvents ContactClickEvent[]
+  reports            Report[]
+  payments           Payment[]
+
+  @@index([cityId, categoryId, status])
+  @@index([ownerId, status])
+  @@index([referralAgentId])
+  @@index([slug])
+}
+
+model ProductService {
+  id                     String            @id @default(cuid())
+  businessId             String
+  categoryId             String?
+  title                  String
+  description            String
+  price                  Decimal?
+  currency               String            @default("USD")
+  images                 String[]
+  isAvailable            Boolean           @default(true)
+  isPromotion            Boolean           @default(false)
+  promotionExpiresAt     DateTime?
+  contactButtonLabel     String            @default("Contacter")
+  status                 PublicationStatus @default(PUBLISHED)
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+  business               Business          @relation(fields: [businessId], references: [id])
+  category               Category?         @relation(fields: [categoryId], references: [id])
+
+  @@index([businessId, status])
+}
+
+model Promotion {
+  id          String            @id @default(cuid())
+  businessId  String
+  title       String
+  description String
+  imageUrl    String?
+  expiresAt   DateTime?
+  status      PublicationStatus @default(PUBLISHED)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  business    Business          @relation(fields: [businessId], references: [id])
+
+  @@index([businessId, status])
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  businessId String
+  userId     String
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  business   Business @relation(fields: [businessId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([businessId])
+}
+
+model Subscription {
+  id         String             @id @default(cuid())
+  userId     String
+  businessId String
+  plan       SubscriptionPlan
+  status     SubscriptionStatus @default(PENDING)
+  startedAt  DateTime?
+  expiresAt  DateTime?
+  amount     Decimal?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  user       User               @relation(fields: [userId], references: [id])
+  business   Business           @relation(fields: [businessId], references: [id])
+  commission Commission?
+  sourceApp  SourceApp          @default(VIBRA_CONNECT)
+  integrationStatus IntegrationStatus @default(NOT_LINKED)
+  externalReferenceId String?
+
+  @@index([businessId, status])
+}
+
+model AgentProfile {
+  id            String       @id @default(cuid())
+  userId         String       @unique
+  code           String       @unique
+  referralLink   String?
+  /// Taux de commission par défaut pour cet agent (%)
+  commissionRate Decimal      @default(5)
+  phone          String?
+  cityId         String?
+  totalRecruited Int          @default(0)
+  bizaflowAgentId String?
+  integrationStatus IntegrationStatus @default(NOT_LINKED)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  user           User         @relation(fields: [userId], references: [id])
+  city           City?        @relation(fields: [cityId], references: [id])
+  commissions    Commission[]
+  referredUsers  User[]       @relation("ReferredUsers")
+  referredBusinesses Business[] @relation("ReferredBusinesses")
+
+  @@index([cityId])
+}
+
+model Commission {
+  id             String    @id @default(cuid())
+  agentProfileId String
+  subscriptionId String    @unique
+  amount         Decimal
+  isPaid         Boolean   @default(false)
+  paidAt         DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  agentProfile   AgentProfile @relation(fields: [agentProfileId], references: [id])
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+}
+
+model BusinessViewEvent {
+  id         String   @id @default(cuid())
+  businessId String
+  source     String?
+  createdAt  DateTime @default(now())
+  business   Business @relation(fields: [businessId], references: [id])
+
+  @@index([businessId, createdAt])
+}
+
+model ContactClickEvent {
+  id         String      @id @default(cuid())
+  businessId String
+  type       ContactType
+  source     String?
+  createdAt  DateTime    @default(now())
+  business   Business    @relation(fields: [businessId], references: [id])
+
+  @@index([businessId, type, createdAt])
+}
+
+model Report {
+  id          String       @id @default(cuid())
+  businessId  String
+  userId      String?
+  reason      String
+  description String?
+  status      ReportStatus @default(OPEN)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  business    Business     @relation(fields: [businessId], references: [id])
+  user        User?        @relation(fields: [userId], references: [id])
+
+  @@index([businessId, status])
+}
+
+model Payment {
+  id               String        @id @default(cuid())
+  businessId       String
+  userId           String
+  requestedPlan    SubscriptionPlan
+  amount           Decimal
+  currency         String        @default("USD")
+  paymentMethod    PaymentMethod
+  provider         String
+  payerPhoneNumber String
+  status           PaymentStatus @default(PENDING)
+  reference        String        @unique
+  proofImageUrl    String?
+  ceoComment       String?
+  expiresAt        DateTime?
+  approvedBy       String?
+  approvedAt       DateTime?
+  sourceApp        SourceApp     @default(VIBRA_CONNECT)
+  integrationStatus IntegrationStatus @default(NOT_LINKED)
+  externalReferenceId String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  business         Business      @relation(fields: [businessId], references: [id])
+  user             User          @relation("PayerPayments", fields: [userId], references: [id])
+  approver         User?         @relation("ApproverPayments", fields: [approvedBy], references: [id])
+
+  @@index([businessId, status])
+  @@index([userId, status])
+}
+
+model PlatformSettings {
+  id                     String   @id @default(cuid())
+  /// Contrainte singleton : une seule configuration active.
+  singletonKey           String   @unique @default("MARKETPLACE")
+  isActive               Boolean  @default(true)
+  defaultAgentCommission Decimal  @default(5)
+  freePlanPrice          Decimal  @default(0)
+  standardPlanPrice      Decimal  @default(29)
+  premiumPlanPrice       Decimal  @default(79)
+  sponsoredPlanPrice     Decimal  @default(149)
+  maxProductsFree        Int      @default(3)
+  maxProductsStandard    Int      @default(15)
+  maxProductsPremium     Int      @default(120)
+  maxGalleryImages       Int      @default(8)
+  sponsoredBoostLevel    Int      @default(1)
+  maintenanceMode        Boolean  @default(false)
+  mtnMomoRwandaNumber    String   @default("+250786533333")
+  mtnMomoRwandaCountry   String   @default("Rwanda")
+  mtnMomoRwandaCurrency  String   @default("RWF")
+  mtnMomoRwandaEnabled   Boolean  @default(true)
+  airtelMoneyRdcNumber   String   @default("+243997409912")
+  airtelMoneyRdcCountry  String   @default("RDC")
+  airtelMoneyRdcCurrency String   @default("USD/CDF")
+  airtelMoneyRdcEnabled  Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
