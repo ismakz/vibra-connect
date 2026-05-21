@@ -7,6 +7,7 @@ import type {
 } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { decimalLikeToNumber, isUrgentSaleLiveForDisplay, urgentSaleLivePrismaWhere } from "@/lib/urgent-sale";
 
 export type CeoCommandCenterOverview =
   | {
@@ -21,7 +22,19 @@ export type CeoCommandCenterOverview =
         businessViews: number;
         whatsappClicks: number;
         conversionRate: number;
+        activeUrgentSales: number;
       };
+      moderationUrgentSales: Array<{
+        id: string;
+        title: string;
+        currency: string;
+        originalPrice: number;
+        urgentPrice: number;
+        endsAt: Date;
+        reason: string | null;
+        businessName: string;
+        businessSlug: string;
+      }>;
       recentPayments: Array<{
         id: string;
         reference: string;
@@ -246,6 +259,44 @@ export async function getCeoCommandCenterOverview(): Promise<CeoCommandCenterOve
       businessSlug: r.business.slug,
     }));
 
+    const nowCeo = new Date();
+    const urgentRowsRaw = await prisma.productService.findMany({
+      where: {
+        status: "PUBLISHED",
+        ...urgentSaleLivePrismaWhere(nowCeo),
+      },
+      take: 50,
+      orderBy: { urgentSaleEndsAt: "asc" },
+      select: {
+        id: true,
+        title: true,
+        currency: true,
+        originalPrice: true,
+        urgentPrice: true,
+        urgentSaleEndsAt: true,
+        urgentSaleReason: true,
+        isUrgentSale: true,
+        urgentSaleStatus: true,
+        business: { select: { name: true, slug: true } },
+      },
+    });
+
+    const moderationUrgentSales = urgentRowsRaw
+      .filter((p) => isUrgentSaleLiveForDisplay(p, nowCeo))
+      .map((p) => ({
+        id: p.id,
+        title: p.title,
+        currency: p.currency,
+        originalPrice: decimalLikeToNumber(p.originalPrice) ?? 0,
+        urgentPrice: decimalLikeToNumber(p.urgentPrice) ?? 0,
+        endsAt: p.urgentSaleEndsAt!,
+        reason: p.urgentSaleReason,
+        businessName: p.business.name,
+        businessSlug: p.business.slug,
+      }));
+
+    const activeUrgentSales = moderationUrgentSales.length;
+
     const [usersRecent, businessesRecent, viewsRecent, cityGroupsRaw, categoryGroupsRaw] = await Promise.all([
       prisma.user.findMany({
         where: { createdAt: { gte: since } },
@@ -306,7 +357,9 @@ export async function getCeoCommandCenterOverview(): Promise<CeoCommandCenterOve
         businessViews,
         whatsappClicks,
         conversionRate,
+        activeUrgentSales,
       },
+      moderationUrgentSales,
       recentPayments,
       paymentCounts: {
         pending: pendingPayCount,

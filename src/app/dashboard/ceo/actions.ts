@@ -1,6 +1,6 @@
 "use server";
 
-import { BusinessStatus, ReportStatus, UserRole } from "@prisma/client";
+import { BusinessStatus, ReportStatus, UserRole, UrgentSaleStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
 import { getAuthSession } from "@/lib/auth";
@@ -135,4 +135,29 @@ export async function superAdminRejectPayment(paymentId: string, ceoComment?: st
   if (!result.ok) throw new Error(result.error);
   revalidatePath(CEO_DASHBOARD_PATH);
   revalidatePath("/dashboard/business/subscription");
+}
+
+export async function superAdminDisableUrgentSale(productId: string) {
+  await requirePlatformCeo();
+  const p = await prisma.productService.findUnique({
+    where: { id: productId },
+    select: { id: true, originalPrice: true, price: true },
+  });
+  if (!p) throw new Error("Produit introuvable.");
+  const restorePrice = p.originalPrice ?? p.price;
+  await prisma.productService.update({
+    where: { id: productId },
+    data: {
+      isUrgentSale: false,
+      urgentSaleStatus: UrgentSaleStatus.CANCELLED,
+      urgentSaleReason: null,
+      urgentSaleEndsAt: null,
+      urgentPrice: null,
+      originalPrice: null,
+      price: restorePrice,
+    },
+  });
+  revalidatePath(CEO_DASHBOARD_PATH);
+  revalidatePath("/explore");
+  revalidatePath("/");
 }

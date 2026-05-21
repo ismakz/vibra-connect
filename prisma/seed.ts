@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 
 import { DEFAULT_CATEGORY_NAMES } from "../src/lib/category-catalog";
 import { slugify } from "../src/lib/slug";
+import { LOCATION_TREE_DATA } from "./location-tree-data";
 
 const prisma = new PrismaClient();
 
@@ -13,19 +14,44 @@ const CEO_NAME = "Bizaflow CEO";
 
 const categories = [...DEFAULT_CATEGORY_NAMES];
 
-const cities = [
-  "Kinshasa",
-  "Goma",
-  "Bukavu",
-  "Lubumbashi",
-  "Kisangani",
-  "Matadi",
-  "Kolwezi",
-  "Kigali",
-  "Gisenyi",
-  "Kampala",
-  "Bujumbura",
-];
+async function syncLocationHierarchy() {
+  for (const c of LOCATION_TREE_DATA) {
+    const country = await prisma.country.upsert({
+      where: { slug: c.slug },
+      update: { name: c.name, sortOrder: c.sortOrder, isActive: true },
+      create: { name: c.name, slug: c.slug, sortOrder: c.sortOrder, isActive: true },
+    });
+
+    for (const p of c.provinces) {
+      const province = await prisma.province.upsert({
+        where: { countryId_slug: { countryId: country.id, slug: p.slug } },
+        update: { name: p.name },
+        create: { countryId: country.id, name: p.name, slug: p.slug },
+      });
+
+      for (const city of p.cities) {
+        await prisma.city.upsert({
+          where: { slug: city.slug },
+          update: { name: city.name, provinceId: province.id, isActive: true },
+          create: { name: city.name, slug: city.slug, provinceId: province.id, isActive: true },
+        });
+      }
+    }
+  }
+
+  const rdc = await prisma.country.findUnique({ where: { slug: "rdc" } });
+  if (rdc) {
+    const legacy = await prisma.province.upsert({
+      where: { countryId_slug: { countryId: rdc.id, slug: "hors-liste" } },
+      update: {},
+      create: { countryId: rdc.id, name: "Autres (migration)", slug: "hors-liste" },
+    });
+    await prisma.city.updateMany({
+      where: { provinceId: null },
+      data: { provinceId: legacy.id },
+    });
+  }
+}
 
 async function main() {
   const passwordHash = await bcrypt.hash(CEO_PASSWORD_DEV, 12);
@@ -91,13 +117,7 @@ async function main() {
     });
   }
 
-  for (const name of cities) {
-    await prisma.city.upsert({
-      where: { slug: slugify(name) },
-      update: {},
-      create: { name, slug: slugify(name) },
-    });
-  }
+  await syncLocationHierarchy();
 }
 
 main()

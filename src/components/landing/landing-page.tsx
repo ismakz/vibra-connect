@@ -17,7 +17,9 @@ import {
   isBusinessOpen,
   isDataImage,
 } from "@/lib/business-ui";
+import { LandingHeroSearch } from "@/components/landing/landing-hero-search";
 import { CATEGORY_ICON_BY_SLUG } from "@/lib/category-catalog";
+import type { LocationTreeCountry } from "@/lib/location-queries";
 import { slugify } from "@/lib/slug";
 
 type Category = { id: string; name: string; slug: string };
@@ -52,10 +54,14 @@ export function LandingPage({
   categories,
   cities,
   featured,
+  locationTree,
+  publishBusinessHref,
 }: {
   categories: Category[];
   cities: City[];
   featured: Featured[];
+  locationTree: LocationTreeCountry[];
+  publishBusinessHref: string;
 }) {
   const [showAllCategories, setShowAllCategories] = useState(false);
   const hasManyCategories = categories.length > 12;
@@ -185,27 +191,43 @@ export function LandingPage({
 
   return (
     <main className="relative overflow-hidden">
-      <section className="mx-auto grid max-w-7xl gap-12 px-4 pb-16 pt-12 lg:grid-cols-2 lg:items-center">
+      <section className="mx-auto grid max-w-7xl gap-12 scroll-mt-28 px-4 pb-16 pt-24 sm:pt-28 md:scroll-mt-32 lg:grid-cols-2 lg:items-center lg:pt-32">
         <div>
           <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="inline-flex rounded-full border border-cyan-400/30 bg-cyan-500/10 px-4 py-1 text-xs text-cyan-300">
             Bizaflow Ready • Bizapay intégré • WhatsApp First
           </motion.p>
-          <motion.h1 initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mt-6 text-4xl font-black leading-tight md:text-6xl">
-            Le marché digital nouvelle génération pour les business africains.
+          <motion.h1
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mt-5 scroll-mt-32 text-4xl font-black leading-[1.12] tracking-tight sm:mt-6 md:text-5xl md:leading-[1.1] lg:text-6xl"
+          >
+            Le marché digital nouvelle génération pour les business.
           </motion.h1>
           <p className="mt-5 max-w-xl text-white/75">Publiez votre commerce, attirez des clients, recevez des paiements et connectez-vous à l’écosystème Bizaflow.</p>
           <p className="mt-3 max-w-xl text-sm text-slate-400">Restaurants, boutiques, hôtels, cybercafés, pharmacies, garages, immobilier, services et entrepreneurs locaux peuvent maintenant être visibles dans toute leur ville.</p>
-          <form action="/explore" className="mt-6 grid gap-3 md:grid-cols-3">
-            <input name="q" placeholder="Produit, service ou business" className="rounded-xl border border-white/20 bg-white/10 px-4 py-3" />
-            <select name="city" className="rounded-xl border border-white/20 bg-white/10 px-4 py-3">
-              <option value="">Toutes les villes</option>
-              {cities.map((city) => <option key={city.id} value={city.slug}>{city.name}</option>)}
-            </select>
-            <button className="rounded-xl bg-gradient-to-r from-violet-600 to-cyan-500 px-5 py-3 font-semibold text-black">Explorer le marché</button>
-          </form>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <Link href="/register" className="rounded-full bg-gradient-to-r from-violet-600 to-cyan-500 px-5 py-2.5 text-sm font-semibold text-black">Publier mon business</Link>
-            <Link href="/explore" className="rounded-full border border-white/20 bg-white/5 px-5 py-2.5 text-sm">Explorer le marché</Link>
+          <div className="mt-6 w-full max-w-4xl space-y-3 sm:space-y-4">
+            <LandingHeroSearch locationTree={locationTree} />
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+              <Link
+                href={publishBusinessHref}
+                className="inline-flex h-11 w-full items-center justify-center rounded-full bg-gradient-to-r from-violet-600 to-cyan-500 px-5 text-sm font-semibold text-black shadow-sm transition hover:from-violet-500 hover:to-cyan-400 sm:w-auto sm:min-w-[10rem]"
+              >
+                Publier mon business
+              </Link>
+              <Link
+                href="/explore"
+                className="inline-flex h-11 w-full items-center justify-center rounded-full border border-white/18 bg-white/[0.06] px-5 text-sm font-medium text-white/90 backdrop-blur-sm transition hover:border-cyan-300/35 hover:bg-white/[0.1] hover:text-white sm:w-auto sm:min-w-[10rem]"
+              >
+                Explorer le marché
+              </Link>
+            </div>
+            <Link
+              href="/explore?urgent=1"
+              className="mt-3 inline-flex items-center gap-2 rounded-full border border-orange-400/35 bg-gradient-to-r from-orange-500/20 to-rose-500/15 px-4 py-2 text-xs font-semibold text-orange-100 shadow-[0_0_20px_rgba(249,115,22,0.15)] transition hover:border-orange-300/50 hover:from-orange-500/30 hover:to-rose-500/25"
+            >
+              Ventes en urgence — offres flash sur la marketplace
+            </Link>
           </div>
           <div className="mt-4 flex flex-wrap gap-2 text-xs text-white/70">
             {["Bizapay intégré", "WhatsApp Business", "Bizaflow Ready", "Bizaflow Telecom bientôt"].map((badge) => (

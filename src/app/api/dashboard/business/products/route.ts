@@ -1,4 +1,4 @@
-import { UserRole } from "@prisma/client";
+import { UrgentSaleStatus, UserRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 import { getAuthSession } from "@/lib/auth";
@@ -13,6 +13,39 @@ import {
 function validationError(error: { issues: { message: string }[] }) {
   const msg = error.issues[0]?.message ?? "Données invalides.";
   return NextResponse.json({ ok: false as const, error: msg }, { status: 400 });
+}
+
+function buildUrgentData(parsed: {
+  isUrgentSale: boolean;
+  originalPrice: number | null;
+  urgentPrice: number | null;
+  urgentSaleReason: string | null;
+  urgentSaleEndsAt: string | null;
+  price: number | null;
+}) {
+  if (!parsed.isUrgentSale) {
+    return {
+      isUrgentSale: false,
+      urgentSaleStatus: UrgentSaleStatus.CANCELLED,
+      urgentSaleReason: null,
+      urgentSaleEndsAt: null,
+      urgentPrice: null,
+      originalPrice: null,
+      price: parsed.price,
+    };
+  }
+
+  const ends = new Date(parsed.urgentSaleEndsAt as string);
+
+  return {
+    isUrgentSale: true,
+    urgentSaleStatus: UrgentSaleStatus.ACTIVE,
+    urgentSaleReason: parsed.urgentSaleReason,
+    urgentSaleEndsAt: ends,
+    originalPrice: parsed.originalPrice,
+    urgentPrice: parsed.urgentPrice,
+    price: parsed.urgentPrice,
+  };
 }
 
 export async function POST(req: Request) {
@@ -55,6 +88,7 @@ export async function POST(req: Request) {
     }
 
     const images = parsed.data.imageUrl ? [parsed.data.imageUrl] : [];
+    const urgent = buildUrgentData(parsed.data);
 
     await prisma.productService.create({
       data: {
@@ -62,10 +96,16 @@ export async function POST(req: Request) {
         title: parsed.data.title,
         description: parsed.data.description,
         currency: parsed.data.currency,
-        price: parsed.data.price,
+        price: urgent.price,
         images,
         isAvailable: parsed.data.isAvailable,
         isPromotion: parsed.data.isPromotion,
+        isUrgentSale: urgent.isUrgentSale,
+        urgentSaleReason: urgent.urgentSaleReason,
+        originalPrice: urgent.originalPrice,
+        urgentPrice: urgent.urgentPrice,
+        urgentSaleEndsAt: urgent.urgentSaleEndsAt,
+        urgentSaleStatus: urgent.urgentSaleStatus,
       },
     });
 
@@ -100,6 +140,7 @@ export async function PATCH(req: Request) {
     if (!business) return NextResponse.json({ ok: false, error: "Business introuvable." }, { status: 404 });
 
     const images = parsed.data.imageUrl ? [parsed.data.imageUrl] : [];
+    const urgent = buildUrgentData(parsed.data);
 
     const result = await prisma.productService.updateMany({
       where: { id: parsed.data.id, businessId: business.id },
@@ -107,10 +148,16 @@ export async function PATCH(req: Request) {
         title: parsed.data.title,
         description: parsed.data.description,
         currency: parsed.data.currency,
-        price: parsed.data.price,
+        price: urgent.price,
         images,
         isAvailable: parsed.data.isAvailable,
         isPromotion: parsed.data.isPromotion,
+        isUrgentSale: urgent.isUrgentSale,
+        urgentSaleReason: urgent.urgentSaleReason,
+        originalPrice: urgent.originalPrice,
+        urgentPrice: urgent.urgentPrice,
+        urgentSaleEndsAt: urgent.urgentSaleEndsAt,
+        urgentSaleStatus: urgent.urgentSaleStatus,
       },
     });
 

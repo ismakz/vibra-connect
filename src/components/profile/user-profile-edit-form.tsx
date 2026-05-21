@@ -4,13 +4,16 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { ContactPreference } from "@prisma/client";
 
+import { LocationCascadingSelects } from "@/components/location/location-cascading-selects";
+import { ImageUploadField } from "@/components/upload/image-upload-field";
 import { contactPreferenceLabel } from "@/lib/contact-preference-ui";
-
-type CityOption = { id: string; name: string };
+import type { LocationTreeCountry } from "@/lib/location-queries";
+import { selectForm } from "@/lib/select-classes";
 
 export function UserProfileEditForm({
   initial,
-  cities,
+  locationTree,
+  imageUploadConfigured,
 }: {
   initial: {
     name: string;
@@ -19,7 +22,8 @@ export function UserProfileEditForm({
     avatarUrl: string;
     contactPreference: ContactPreference;
   };
-  cities: CityOption[];
+  locationTree: LocationTreeCountry[];
+  imageUploadConfigured: boolean;
 }) {
   const router = useRouter();
   const [name, setName] = useState(initial.name);
@@ -75,17 +79,24 @@ export function UserProfileEditForm({
       </label>
       <label className="block">
         <span className="mb-1 block text-xs text-white/70">Ville</span>
-        <select className={inputClass} value={cityId} onChange={(e) => setCityId(e.target.value)}>
-          <option value="">— Non renseignée —</option>
-          {cities.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+        <LocationCascadingSelects
+          tree={locationTree}
+          value={cityId}
+          onChange={setCityId}
+          valueMode="id"
+        />
       </label>
       <label className="block">
         <span className="mb-1 block text-xs text-white/70">URL avatar (https…)</span>
+        <ImageUploadField
+          purpose="avatar"
+          label="Photo de profil"
+          value={avatarUrl}
+          onChange={setAvatarUrl}
+          imageUploadConfigured={imageUploadConfigured}
+          disabled={saving}
+          className="mb-2"
+        />
         <input
           className={inputClass}
           value={avatarUrl}
@@ -96,7 +107,7 @@ export function UserProfileEditForm({
       <label className="block">
         <span className="mb-1 block text-xs text-white/70">Préférence de contact</span>
         <select
-          className={inputClass}
+          className={selectForm}
           value={contactPreference}
           onChange={(e) => setContactPreference(e.target.value as ContactPreference)}
         >

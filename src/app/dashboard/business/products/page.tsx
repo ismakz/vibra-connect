@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { Box } from "lucide-react";
 
 import { ComingSoonButton } from "@/components/dashboard/coming-soon-button";
@@ -11,11 +10,14 @@ import { DashboardGlassCard } from "@/components/dashboard/dashboard-glass-card"
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { formatRating, getBusinessCoverImage, isDataImage } from "@/lib/business-ui";
 import { getAuthSession } from "@/lib/auth";
+import { guardBusinessOwnerArea } from "@/lib/dashboard-business-access";
+import { isImageUploadConfigured } from "@/lib/image-upload-config";
 import { prisma } from "@/lib/prisma";
+import { isUrgentSaleLiveForDisplay } from "@/lib/urgent-sale";
 
 type SearchParams = Promise<{
   q?: string;
-  status?: "all" | "available" | "unavailable" | "promotion";
+  status?: "all" | "available" | "unavailable" | "promotion" | "urgent";
 }>;
 
 type ProductRow = {
@@ -29,6 +31,13 @@ type ProductRow = {
   imageUrl: string;
   storedImageUrl: string;
   businessSlug: string;
+  isUrgentSale: boolean;
+  urgentSaleStatus: string;
+  urgentSaleReason: string | null;
+  originalPrice: number | null;
+  urgentPrice: number | null;
+  urgentSaleEndsAt: Date | null;
+  isUrgentDisplay: boolean;
 };
 
 function toNumber(value: unknown) {
@@ -47,9 +56,8 @@ function formatPrice(value: number | null, currency: string) {
 }
 
 export default async function BusinessProductsPage({ searchParams }: { searchParams: SearchParams }) {
-  const session = await getAuthSession();
-  if (!session) redirect("/login");
-  if (session.user.role !== "BUSINESS_OWNER") redirect("/");
+  const session = await guardBusinessOwnerArea("/dashboard/business/products");
+  const imageUploadConfigured = isImageUploadConfigured();
 
   const params = await searchParams;
   const status = params.status ?? "all";
@@ -87,6 +95,7 @@ export default async function BusinessProductsPage({ searchParams }: { searchPar
 
     if (business) {
       const businessSlug = business.slug;
+      const now = new Date();
       const where = {
         businessId: business.id,
         status: "PUBLISHED" as const,
@@ -94,6 +103,15 @@ export default async function BusinessProductsPage({ searchParams }: { searchPar
         ...(status === "available" ? { isAvailable: true } : {}),
         ...(status === "unavailable" ? { isAvailable: false } : {}),
         ...(status === "promotion" ? { isPromotion: true } : {}),
+        ...(status === "urgent"
+          ? {
+              isUrgentSale: true,
+              urgentSaleStatus: "ACTIVE" as const,
+              urgentSaleEndsAt: { gt: now },
+              originalPrice: { not: null },
+              urgentPrice: { not: null },
+            }
+          : {}),
       };
 
       const dbProducts = await prisma.productService.findMany({
@@ -109,27 +127,76 @@ export default async function BusinessProductsPage({ searchParams }: { searchPar
           images: true,
           isAvailable: true,
           isPromotion: true,
+          isUrgentSale: true,
+          urgentSaleStatus: true,
+          urgentSaleReason: true,
+          originalPrice: true,
+          urgentPrice: true,
+          urgentSaleEndsAt: true,
         },
       });
 
-      products = dbProducts.map((item) => ({
-        id: item.id,
-        title: item.title,
-        description: item.description,
-        price: toNumber(item.price),
-        currency: item.currency,
-        isAvailable: item.isAvailable,
-        isPromotion: item.isPromotion,
-        storedImageUrl: item.images?.[0] ?? "",
-        imageUrl:
-          item.images?.[0] ??
-          getBusinessCoverImage({
-            name: item.title,
-            category: { name: "Produit / Service" },
-            city: { name: business?.name ?? "VIBRA CONNECT" },
-          }),
-        businessSlug,
-      }));
+      const sorted = [...dbProducts].sort((a, b) => {
+        const liveA = isUrgentSaleLiveForDisplay(
+          {
+            isUrgentSale: a.isUrgentSale,
+            urgentSaleStatus: a.urgentSaleStatus,
+            urgentSaleEndsAt: a.urgentSaleEndsAt,
+            originalPrice: a.originalPrice,
+            urgentPrice: a.urgentPrice,
+          },
+          now,
+        );
+        const liveB = isUrgentSaleLiveForDisplay(
+          {
+            isUrgentSale: b.isUrgentSale,
+            urgentSaleStatus: b.urgentSaleStatus,
+            urgentSaleEndsAt: b.urgentSaleEndsAt,
+            originalPrice: b.originalPrice,
+            urgentPrice: b.urgentPrice,
+          },
+          now,
+        );
+        return Number(liveB) - Number(liveA);
+      });
+
+      products = sorted.map((item) => {
+        const isUrgentDisplay = isUrgentSaleLiveForDisplay(
+          {
+            isUrgentSale: item.isUrgentSale,
+            urgentSaleStatus: item.urgentSaleStatus,
+            urgentSaleEndsAt: item.urgentSaleEndsAt,
+            originalPrice: item.originalPrice,
+            urgentPrice: item.urgentPrice,
+          },
+          now,
+        );
+        return {
+          id: item.id,
+          title: item.title,
+          description: item.description,
+          price: toNumber(item.price),
+          currency: item.currency,
+          isAvailable: item.isAvailable,
+          isPromotion: item.isPromotion,
+          isUrgentSale: item.isUrgentSale,
+          urgentSaleStatus: item.urgentSaleStatus,
+          urgentSaleReason: item.urgentSaleReason,
+          originalPrice: toNumber(item.originalPrice),
+          urgentPrice: toNumber(item.urgentPrice),
+          urgentSaleEndsAt: item.urgentSaleEndsAt,
+          isUrgentDisplay,
+          storedImageUrl: item.images?.[0] ?? "",
+          imageUrl:
+            item.images?.[0] ??
+            getBusinessCoverImage({
+              name: item.title,
+              category: { name: "Produit / Service" },
+              city: { name: business?.name ?? "VIBRA CONNECT" },
+            }),
+          businessSlug,
+        };
+      });
     }
   } catch {
     databaseAvailable = false;
@@ -143,6 +210,13 @@ export default async function BusinessProductsPage({ searchParams }: { searchPar
         currency: "USD",
         isAvailable: true,
         isPromotion: true,
+        isUrgentSale: false,
+        urgentSaleStatus: "CANCELLED",
+        urgentSaleReason: null,
+        originalPrice: null,
+        urgentPrice: null,
+        urgentSaleEndsAt: null,
+        isUrgentDisplay: false,
         storedImageUrl: "",
         imageUrl: getBusinessCoverImage({
           name: "Service express premium",
@@ -159,6 +233,13 @@ export default async function BusinessProductsPage({ searchParams }: { searchPar
         currency: "USD",
         isAvailable: false,
         isPromotion: false,
+        isUrgentSale: false,
+        urgentSaleStatus: "CANCELLED",
+        urgentSaleReason: null,
+        originalPrice: null,
+        urgentPrice: null,
+        urgentSaleEndsAt: null,
+        isUrgentDisplay: false,
         storedImageUrl: "",
         imageUrl: getBusinessCoverImage({
           name: "Pack accompagnement business",
@@ -173,7 +254,8 @@ export default async function BusinessProductsPage({ searchParams }: { searchPar
         status === "all" ||
         (status === "available" && item.isAvailable) ||
         (status === "unavailable" && !item.isAvailable) ||
-        (status === "promotion" && item.isPromotion);
+        (status === "promotion" && item.isPromotion) ||
+        (status === "urgent" && item.isUrgentDisplay);
       return matchesQ && matchesStatus;
     });
   }
@@ -189,6 +271,7 @@ export default async function BusinessProductsPage({ searchParams }: { searchPar
             label="Ajouter un produit/service"
             className="rounded-full bg-cyan-500 px-4 py-2 text-sm font-semibold text-black hover:bg-cyan-400"
             databaseAvailable={databaseAvailable}
+            imageUploadConfigured={imageUploadConfigured}
           />
         }
       />
@@ -208,6 +291,7 @@ export default async function BusinessProductsPage({ searchParams }: { searchPar
           { value: "available", label: "Disponible" },
           { value: "unavailable", label: "Indisponible" },
           { value: "promotion", label: "Promotion" },
+          { value: "urgent", label: "Vente en urgence" },
         ]}
         resultsCount={products.length}
       />
@@ -223,6 +307,7 @@ export default async function BusinessProductsPage({ searchParams }: { searchPar
               label="Ajouter un produit/service"
               className="rounded-full bg-cyan-500 px-5 py-2.5 text-sm font-semibold text-black hover:bg-cyan-400"
               databaseAvailable={databaseAvailable}
+              imageUploadConfigured={imageUploadConfigured}
             />
           }
         />
@@ -249,9 +334,28 @@ export default async function BusinessProductsPage({ searchParams }: { searchPar
                       Promotion
                     </span>
                   )}
+                  {item.isUrgentDisplay && (
+                    <span className="rounded-full border border-orange-400/35 bg-orange-500/15 px-2 py-1 text-xs font-semibold text-orange-100">
+                      Vente en urgence
+                    </span>
+                  )}
                 </div>
                 <p className="mt-2 line-clamp-2 text-sm text-white/70">{item.description}</p>
-                <p className="mt-3 text-sm font-semibold text-cyan-200">{formatPrice(item.price, item.currency)}</p>
+                {item.isUrgentDisplay && item.originalPrice != null && item.urgentPrice != null ? (
+                  <div className="mt-3 space-y-1">
+                    <div className="flex flex-wrap items-baseline gap-2">
+                      <span className="text-sm text-white/45 line-through">{formatPrice(item.originalPrice, item.currency)}</span>
+                      <span className="text-sm font-bold text-orange-200">{formatPrice(item.urgentPrice, item.currency)}</span>
+                    </div>
+                    {item.urgentSaleEndsAt && (
+                      <p className="text-xs text-white/55">
+                        Fin urgence : {item.urgentSaleEndsAt.toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="mt-3 text-sm font-semibold text-cyan-200">{formatPrice(item.price, item.currency)}</p>
+                )}
 
                 <div className="mt-3 flex items-center gap-2">
                   <span
@@ -273,6 +377,7 @@ export default async function BusinessProductsPage({ searchParams }: { searchPar
                     label="Modifier"
                     className="rounded-xl border border-white/20 bg-white/5 px-2 py-2 text-xs hover:border-cyan-300/30"
                     databaseAvailable={databaseAvailable}
+                    imageUploadConfigured={imageUploadConfigured}
                     initial={{
                       id: item.id,
                       title: item.title,
@@ -282,6 +387,12 @@ export default async function BusinessProductsPage({ searchParams }: { searchPar
                       imageUrl: item.storedImageUrl,
                       isAvailable: item.isAvailable,
                       isPromotion: item.isPromotion,
+                      isUrgentSale: item.isUrgentSale,
+                      originalPrice: item.originalPrice,
+                      urgentPrice: item.urgentPrice,
+                      urgentSaleReason: item.urgentSaleReason,
+                      urgentSaleEndsAt: item.urgentSaleEndsAt?.toISOString() ?? null,
+                      urgentSaleStatus: item.urgentSaleStatus,
                     }}
                   />
                   <Link

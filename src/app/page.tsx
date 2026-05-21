@@ -1,8 +1,14 @@
 import { LandingPage } from "@/components/landing/landing-page";
+import { getAuthSession } from "@/lib/auth";
 import { getLandingData } from "@/lib/queries";
+import { getBusinessHref } from "@/lib/nav-user";
 
 export default async function Home() {
-  const { categories, cities, featured, databaseAvailable } = await getLandingData();
+  const { categories, cities, featured, locationTree, databaseAvailable } = await getLandingData();
+  const session = await getAuthSession();
+  const isAuthenticated = Boolean(session?.user?.id);
+  const publishBusinessHref = getBusinessHref(session?.user?.role ?? null, isAuthenticated);
+
   return (
     <div className="min-h-screen bg-[#050816] text-[#F8FAFC]">
       {!databaseAvailable && (
@@ -10,7 +16,13 @@ export default async function Home() {
           Base de donnees indisponible pour le moment. Affichage en mode vitrine.
         </div>
       )}
-      <LandingPage categories={categories} cities={cities} featured={featured} />
+      <LandingPage
+        categories={categories}
+        cities={cities}
+        featured={featured}
+        locationTree={locationTree}
+        publishBusinessHref={publishBusinessHref}
+      />
     </div>
   );
 }

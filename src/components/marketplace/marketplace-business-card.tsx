@@ -2,10 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { CheckCircle2, Clock, Eye, Sparkles, Star } from "lucide-react";
+import { CheckCircle2, Clock, Eye, Flame, Sparkles, Star } from "lucide-react";
 
 import {
-  buildWhatsAppUrl,
+  buildWhatsAppMessage,
   fallbackPhone,
   formatRating,
   getBusinessCoverImage,
@@ -14,8 +14,11 @@ import {
   isBusinessSponsored,
   isDataImage,
 } from "@/lib/business-ui";
+import { buildWhatsAppLink } from "@/lib/integrations/whatsapp";
 import { isPremiumBadgePlan } from "@/lib/subscription-rules";
 import type { MarketplaceBusinessRow } from "@/lib/marketplace-queries";
+
+import { UrgentSaleCountdown } from "./urgent-sale-countdown";
 
 function shouldUseUnoptimized(src: string) {
   return isDataImage(src);
@@ -31,6 +34,10 @@ async function trackWhatsApp(businessId: string, target: string) {
   } catch {
     /* non bloquant */
   }
+}
+
+function formatMoney(n: number, currency: string) {
+  return `${n.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} ${currency}`;
 }
 
 export function MarketplaceBusinessCard({
@@ -56,7 +63,11 @@ export function MarketplaceBusinessCard({
   const hasPromotion = business.promotions.length > 0;
   const phone =
     business.whatsappNumber ?? business.whatsapp ?? business.phoneNumber ?? business.phone ?? fallbackPhone(business.slug);
-  const whatsappLink = buildWhatsAppUrl(phone, business.name);
+  const urgent = business.urgentHighlight;
+  const whatsappMessage = urgent
+    ? `Bonjour, je vous contacte depuis VIBRA CONNECT pour votre vente en urgence « ${urgent.title} » chez ${business.name}.`
+    : buildWhatsAppMessage(business.name);
+  const whatsappLink = buildWhatsAppLink(phone, whatsappMessage);
   const views = business._count.viewEvents;
   const premium = isPremiumBadgePlan(business.subscriptionPlan);
 
@@ -113,6 +124,12 @@ export function MarketplaceBusinessCard({
               Sponsorisé
             </div>
           )}
+          {urgent && (
+            <div className="inline-flex items-center gap-1 rounded-full border border-orange-400/45 bg-gradient-to-r from-orange-600/40 to-rose-600/35 px-2.5 py-1 text-[10px] font-bold text-orange-50 shadow-[0_0_16px_rgba(249,115,22,0.35)] sm:text-xs">
+              <Flame className="h-3 w-3" />
+              Vente en urgence
+            </div>
+          )}
         </div>
 
         <div className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/50 px-2 py-1 text-[10px] font-medium text-white/85 sm:text-xs">
@@ -163,6 +180,23 @@ export function MarketplaceBusinessCard({
         <p className="mt-3 line-clamp-2 text-sm text-white/70">
           {business.description ?? "Entreprise locale sur VIBRA CONNECT — marketplace Bizaflow."}
         </p>
+
+        {urgent && (
+          <div className="mt-4 rounded-xl border border-orange-400/25 bg-gradient-to-br from-orange-500/10 via-rose-500/5 to-transparent p-3 backdrop-blur-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-orange-200/90">Offre flash</p>
+            <p className="mt-1 line-clamp-2 text-sm font-medium text-white">{urgent.title}</p>
+            <div className="mt-2 flex flex-wrap items-baseline gap-2">
+              <span className="text-sm text-white/50 line-through">{formatMoney(urgent.originalPrice, urgent.currency)}</span>
+              <span className="text-lg font-black text-emerald-300">{formatMoney(urgent.urgentPrice, urgent.currency)}</span>
+            </div>
+            <p className="mt-2 text-xs text-orange-100/90">
+              Fin dans <UrgentSaleCountdown endsAtIso={urgent.endsAt} />
+            </p>
+            {urgent.reason ? (
+              <p className="mt-1 line-clamp-2 text-xs text-white/65">{urgent.reason}</p>
+            ) : null}
+          </div>
+        )}
 
         <div className="mt-4 grid grid-cols-2 gap-2">
           <a

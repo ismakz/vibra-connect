@@ -24,3 +24,64 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
+
+/* —— Native selects / options : thème dark Bizaflow (lisibilité Windows / WebKit) —— */
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  select,
+  option,
+  optgroup {
+    background-color: #0b1020;
+    color: #f8fafc;
+  }
+
+  select:focus-visible {
+    outline: none;
+  }
+
+  select::placeholder {
+    color: rgb(148 163 184);
+  }
+}
+
+@layer components {
+  .vibra-select {
+    box-sizing: border-box;
+    appearance: auto;
+    color-scheme: dark;
+    background-color: #0b1020;
+    color: #f8fafc;
+    border: 1px solid rgba(6, 182, 212, 0.35);
+  }
+
+  .vibra-select:hover:not(:disabled) {
+    border-color: rgba(34, 211, 238, 0.45);
+    background-color: rgba(6, 182, 212, 0.1);
+  }
+
+  .vibra-select:focus {
+    outline: none;
+    border-color: rgba(6, 182, 212, 0.65);
+    box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.28);
+  }
+
+  .vibra-select:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .vibra-select option,
+  .vibra-select optgroup {
+    background-color: #0b1020;
+    color: #f8fafc;
+  }
+
+  .vibra-select option:checked,
+  .vibra-select option:hover {
+    background-color: rgba(6, 182, 212, 0.22);
+    color: #fff;
+  }
+}

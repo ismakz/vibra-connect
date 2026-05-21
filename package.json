@@ -7,10 +7,15 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "pwa:icons": "node scripts/generate-pwa-icons.mjs",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "prisma db seed"
+    "prisma:seed": "prisma db seed",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:baseline:location": "prisma migrate resolve --applied 20260514120000_location_hierarchy",
+    "prisma:verify-seed": "node scripts/verify-db-seed.mjs",
+    "prisma:sync": "prisma generate && prisma db push && prisma db seed"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -19,6 +24,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@prisma/client": "^5.22.0",
     "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.10.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.14.0",
@@ -38,6 +44,8 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.5",
+    "png-to-ico": "^3.0.1",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5"

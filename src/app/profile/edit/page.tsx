@@ -3,15 +3,18 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { DashboardGlassCard } from "@/components/dashboard/dashboard-glass-card";
+import { AccountSecurityForms } from "@/components/profile/account-security-forms";
 import { UserProfileEditForm } from "@/components/profile/user-profile-edit-form";
 import { getAuthSession } from "@/lib/auth";
+import { isImageUploadConfigured } from "@/lib/image-upload-config";
+import { getLocationTree } from "@/lib/location-queries";
 import { prisma } from "@/lib/prisma";
 
 export default async function ProfileEditPage() {
   const session = await getAuthSession();
   if (!session) redirect("/login");
 
-  let cities: Array<{ id: string; name: string }> = [];
+  let accountEmail = session.user.email?.trim() ?? "";
   let initial: {
     name: string;
     phone: string;
@@ -26,22 +29,22 @@ export default async function ProfileEditPage() {
     contactPreference: "WHATSAPP",
   };
 
+  let locationTree = await getLocationTree().catch(() => []);
+
   try {
-    const [user, cityRows] = await Promise.all([
-      prisma.user.findUnique({
-        where: { id: session.user.id },
-        select: {
-          name: true,
-          phone: true,
-          cityId: true,
-          avatarUrl: true,
-          contactPreference: true,
-        },
-      }),
-      prisma.city.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
-    ]);
-    cities = cityRows;
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        name: true,
+        email: true,
+        phone: true,
+        cityId: true,
+        avatarUrl: true,
+        contactPreference: true,
+      },
+    });
     if (user) {
+      accountEmail = user.email.trim();
       initial = {
         name: user.name?.trim() || "",
         phone: user.phone?.trim() ?? "",
@@ -51,12 +54,14 @@ export default async function ProfileEditPage() {
       };
     }
   } catch {
-    cities = [];
+    locationTree = [];
   }
+
+  const imageUploadConfigured = isImageUploadConfigured();
 
   return (
     <main className="min-h-screen bg-[#050816] px-4 py-10 text-white">
-      <div className="mx-auto max-w-xl space-y-6">
+      <div className="mx-auto max-w-2xl space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-black tracking-tight">Modifier le profil</h1>
           <Link href="/profile" className="text-sm text-cyan-200 hover:underline">
@@ -64,13 +69,14 @@ export default async function ProfileEditPage() {
           </Link>
         </div>
         <DashboardGlassCard className="p-6">
-          {cities.length === 0 ? (
-            <p className="mb-4 rounded-lg border border-amber-400/25 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
-              Liste des villes temporairement indisponible. Vous pouvez enregistrer le reste du profil et réessayer plus tard
-              pour associer une ville.
-            </p>
-          ) : null}
-          <UserProfileEditForm initial={initial} cities={cities} />
+          <h2 className="mb-4 text-lg font-bold text-white">Profil public</h2>
+          <UserProfileEditForm initial={initial} locationTree={locationTree} imageUploadConfigured={imageUploadConfigured} />
+        </DashboardGlassCard>
+
+        <DashboardGlassCard id="securite-compte" className="scroll-mt-24 p-6">
+          <h2 className="mb-1 text-lg font-bold text-white">Sécurité du compte</h2>
+          <p className="mb-6 text-xs text-white/55">E-mail et mot de passe sont vérifiés côté serveur (bcrypt, unicité).</p>
+          <AccountSecurityForms currentEmail={accountEmail} />
         </DashboardGlassCard>
       </div>
     </main>

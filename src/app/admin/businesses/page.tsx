@@ -3,6 +3,7 @@ import { BusinessStatus } from "@prisma/client";
 
 import { getAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { selectAdminCompact } from "@/lib/select-classes";
 
 export default async function AdminBusinessesPage() {
   const session = await getAuthSession();
@@ -39,7 +40,7 @@ export default async function AdminBusinessesPage() {
             <p className="text-sm">Statut: {business.status}</p>
             <form action={updateBusinessStatus} className="mt-2 flex gap-2">
               <input type="hidden" name="businessId" value={business.id} />
-              <select name="status" className="rounded-lg border border-white/20 bg-white/10 px-2 py-1 text-sm">
+              <select name="status" className={`${selectAdminCompact} min-w-[9rem]`}>
                 <option value="PENDING">PENDING</option>
                 <option value="ACTIVE">ACTIVE</option>
                 <option value="SUSPENDED">SUSPENDED</option>

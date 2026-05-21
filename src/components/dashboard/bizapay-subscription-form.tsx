@@ -4,12 +4,16 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Copy } from "lucide-react";
 
+import { ImageUploadField } from "@/components/upload/image-upload-field";
+import { selectFormDense } from "@/lib/select-classes";
+
 type PlanKey = "FREE" | "STANDARD" | "PREMIUM" | "SPONSORED";
 type Method = "AIRTEL_MONEY_RDC" | "MTN_MOMO_RWANDA" | "MANUAL";
 
 export function BizapaySubscriptionForm({
   prices,
   officialAccounts,
+  imageUploadConfigured,
 }: {
   prices: Record<PlanKey, number>;
   officialAccounts: {
@@ -22,6 +26,7 @@ export function BizapaySubscriptionForm({
     airtelMoneyRdcCurrency: string;
     airtelMoneyRdcEnabled: boolean;
   };
+  imageUploadConfigured: boolean;
 }) {
   const router = useRouter();
   const [plan, setPlan] = useState<PlanKey>("STANDARD");
@@ -153,7 +158,7 @@ export function BizapaySubscriptionForm({
           <select
             value={plan}
             onChange={(e) => setPlan(e.target.value as PlanKey)}
-            className="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2"
+            className={selectFormDense}
           >
             <option value="FREE">Free</option>
             <option value="STANDARD">Standard</option>
@@ -167,7 +172,7 @@ export function BizapaySubscriptionForm({
           <select
             value={paymentMethod}
             onChange={(e) => setPaymentMethod(e.target.value as Method)}
-            className="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2"
+            className={selectFormDense}
           >
             {officialAccounts.airtelMoneyRdcEnabled && <option value="AIRTEL_MONEY_RDC">Airtel Money RDC</option>}
             {officialAccounts.mtnMomoRwandaEnabled && <option value="MTN_MOMO_RWANDA">MTN MoMo Rwanda</option>}
@@ -201,6 +206,15 @@ export function BizapaySubscriptionForm({
 
       <label className="space-y-1 text-sm">
         <span className="text-white/75">Capture (URL optionnelle)</span>
+        <ImageUploadField
+          purpose="bizapay-proof"
+          label="Preuve de paiement (image)"
+          value={proofImageUrl}
+          onChange={setProofImageUrl}
+          imageUploadConfigured={imageUploadConfigured}
+          disabled={loading}
+          className="mb-2"
+        />
         <input
           value={proofImageUrl}
           onChange={(e) => setProofImageUrl(e.target.value)}

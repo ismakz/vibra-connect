@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import {
   Bell,
@@ -26,14 +27,6 @@ export type TopNavUser = {
   role: UserRole;
   avatarUrl: string | null;
 };
-
-const baseLinks = [
-  { href: "/", label: "Accueil" },
-  { href: "/explore", label: "Marketplace" },
-  { href: "/dashboard/business", label: "Business" },
-  { href: "/agent", label: "Agents" },
-  { href: "/pricing", label: "Tarifs" },
-] as const;
 
 function ProfileMenu({ navUser }: { navUser: TopNavUser }) {
   const [open, setOpen] = useState(false);
@@ -106,28 +99,50 @@ function ProfileMenu({ navUser }: { navUser: TopNavUser }) {
   );
 }
 
-export function TopNavClient({ navUser }: { navUser: TopNavUser | null }) {
+export function TopNavClient({
+  navUser,
+  businessHref,
+  isAuthenticated,
+}: {
+  navUser: TopNavUser | null;
+  /** Calculé côté serveur (session + rôle DB) — ne pas recalculer ici pour éviter décalage prod. */
+  businessHref: string;
+  isAuthenticated: boolean;
+}) {
   const [open, setOpen] = useState(false);
 
   const ceoLink =
     navUser && isPlatformCeoRole(navUser.role) ? ([{ href: "/dashboard/ceo", label: "CEO Command Center" }] as const) : [];
 
-  const baseLinksFiltered = baseLinks.filter((link) => {
-    if (link.href === "/agent") {
-      if (!navUser) return false;
-      return navUser.role === "AGENT";
-    }
-    return true;
-  });
+  const coreLinks: Array<{ href: string; label: string }> = [
+    { href: "/", label: "Accueil" },
+    { href: "/explore", label: "Marketplace" },
+    { href: businessHref, label: "Business" },
+  ];
+  if (navUser?.role === "AGENT") {
+    coreLinks.push({ href: "/agent", label: "Agents" });
+  }
+  coreLinks.push({ href: "/pricing", label: "Tarifs" });
 
-  const links = [...ceoLink, ...baseLinksFiltered];
+  const links = [...ceoLink, ...coreLinks];
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#050816]/70 backdrop-blur-xl">
+    <header
+      className="sticky top-0 z-50 border-b border-white/10 bg-[#050816]/70 backdrop-blur-xl"
+      data-nav-authenticated={isAuthenticated ? "1" : "0"}
+      data-nav-role={navUser?.role ?? "guest"}
+    >
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 py-3">
         <Link href="/" className="flex min-w-0 flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-2">
           <span className="flex items-center gap-2">
-            <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-gradient-to-br from-violet-400 to-cyan-400 shadow-[0_0_16px_rgba(6,182,212,0.65)]" />
+            <Image
+              src="/logo.svg"
+              alt=""
+              width={36}
+              height={36}
+              priority
+              className="h-9 w-9 shrink-0 rounded-lg"
+            />
             <span className="truncate text-sm font-bold tracking-[0.18em] text-white">VIBRA CONNECT</span>
           </span>
           <span className="hidden text-[10px] font-semibold uppercase tracking-[0.28em] text-white/40 sm:inline">
@@ -141,17 +156,25 @@ export function TopNavClient({ navUser }: { navUser: TopNavUser | null }) {
             </Link>
           ))}
         </nav>
-        <div className="hidden shrink-0 items-center gap-2 md:flex md:gap-3">
-          {navUser ? (
+        <div className="hidden shrink-0 items-center gap-2 md:flex md:gap-2 lg:gap-3">
+          {isAuthenticated && navUser ? (
             <ProfileMenu navUser={navUser} />
           ) : (
-            <Link href="/login" className="rounded-full border border-white/20 px-4 py-2 text-sm">
-              Connexion
-            </Link>
+            <>
+              <Link href="/login" className="rounded-full border border-white/20 px-3 py-2 text-sm whitespace-nowrap sm:px-4">
+                Connexion
+              </Link>
+              <Link
+                href="/register"
+                className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-sm font-medium text-white/90 shadow-[0_0_24px_rgba(0,0,0,0.25)] backdrop-blur-md transition hover:border-cyan-400/35 hover:bg-white/10 whitespace-nowrap sm:px-4"
+              >
+                Créer un compte
+              </Link>
+            </>
           )}
           <Link
-            href="/register"
-            className="rounded-full bg-gradient-to-r from-violet-600 to-cyan-500 px-4 py-2 text-sm font-semibold text-black"
+            href={businessHref}
+            className="rounded-full bg-gradient-to-r from-violet-600 to-cyan-500 px-3 py-2 text-sm font-semibold text-black whitespace-nowrap sm:px-4"
           >
             Publier mon business
           </Link>
@@ -171,7 +194,7 @@ export function TopNavClient({ navUser }: { navUser: TopNavUser | null }) {
         className="overflow-hidden border-t border-white/10 md:hidden"
       >
         <div className="space-y-2 px-4 py-3">
-          {navUser ? (
+          {isAuthenticated && navUser ? (
             <div className="mb-2 flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
               <UserAvatar name={navUser.name} email={navUser.email} avatarUrl={navUser.avatarUrl} size={44} />
               <div className="min-w-0">
@@ -190,7 +213,7 @@ export function TopNavClient({ navUser }: { navUser: TopNavUser | null }) {
               {link.label}
             </Link>
           ))}
-          {navUser ? (
+          {isAuthenticated && navUser ? (
             <>
               <Link href="/profile" onClick={() => setOpen(false)} className="block rounded-lg bg-white/5 px-3 py-2 text-sm">
                 Mon profil
@@ -209,12 +232,21 @@ export function TopNavClient({ navUser }: { navUser: TopNavUser | null }) {
               </Link>
             </>
           ) : (
-            <Link href="/login" onClick={() => setOpen(false)} className="block rounded-lg border border-white/20 px-3 py-2 text-sm">
-              Connexion
-            </Link>
+            <>
+              <Link href="/login" onClick={() => setOpen(false)} className="block rounded-lg border border-white/20 px-3 py-2 text-sm">
+                Connexion
+              </Link>
+              <Link
+                href="/register"
+                onClick={() => setOpen(false)}
+                className="block rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm font-medium text-white/90 backdrop-blur-md"
+              >
+                Créer un compte
+              </Link>
+            </>
           )}
           <Link
-            href="/register"
+            href={businessHref}
             onClick={() => setOpen(false)}
             className="block rounded-lg bg-gradient-to-r from-violet-600 to-cyan-500 px-3 py-2 text-sm font-semibold text-black"
           >

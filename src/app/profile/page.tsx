@@ -9,7 +9,7 @@ import { contactPreferenceLabel } from "@/lib/contact-preference-ui";
 import { navRoleBadge } from "@/lib/nav-user";
 import { prisma } from "@/lib/prisma";
 
-type SearchParams = Promise<{ updated?: string }>;
+type SearchParams = Promise<{ updated?: string; invited?: string; welcome?: string; refInvalid?: string }>;
 
 export default async function ProfilePage({ searchParams }: { searchParams: SearchParams }) {
   const session = await getAuthSession();
@@ -17,6 +17,9 @@ export default async function ProfilePage({ searchParams }: { searchParams: Sear
 
   const sp = await searchParams;
   const showUpdated = sp.updated === "1";
+  const showInvitedQuery = sp.invited === "1";
+  const showWelcome = sp.welcome === "1";
+  const showRefInvalid = sp.refInvalid === "1";
 
   let databaseAvailable = true;
   let user: {
@@ -28,6 +31,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Sear
     contactPreference: string;
     createdAt: Date;
     city: { name: string } | null;
+    referredByAgentId: string | null;
   } | null = null;
 
   try {
@@ -42,6 +46,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Sear
         contactPreference: true,
         createdAt: true,
         city: { select: { name: true } },
+        referredByAgentId: true,
       },
     });
     user = row;
@@ -73,6 +78,26 @@ export default async function ProfilePage({ searchParams }: { searchParams: Sear
         {showUpdated && (
           <div className="rounded-xl border border-emerald-400/35 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
             Profil mis à jour avec succès.
+          </div>
+        )}
+        {showWelcome && (
+          <div className="rounded-xl border border-cyan-400/35 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100">
+            Bienvenue sur VIBRA CONNECT — votre compte est prêt.
+          </div>
+        )}
+        {(user.referredByAgentId || showInvitedQuery) && (
+          <div className="rounded-xl border border-violet-400/35 bg-violet-500/10 px-4 py-3 text-sm text-violet-100">
+            <p>Invité par un agent partenaire Bizaflow</p>
+            {user.referredByAgentId ? (
+              <Link href="/invite/agent" className="mt-2 inline-block text-xs font-semibold text-cyan-200 hover:underline">
+                Voir la page de bienvenue parrainage →
+              </Link>
+            ) : null}
+          </div>
+        )}
+        {showRefInvalid && (
+          <div className="rounded-xl border border-amber-400/35 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+            Le code parrainage indiqué est introuvable — votre compte a été créé sans rattachement agent.
           </div>
         )}
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -115,6 +140,19 @@ export default async function ProfilePage({ searchParams }: { searchParams: Sear
               <dd className="mt-1 font-medium text-white/90">{user.createdAt.toLocaleDateString("fr-FR")}</dd>
             </div>
           </dl>
+        </DashboardGlassCard>
+
+        <DashboardGlassCard className="p-5">
+          <h2 className="text-sm font-bold text-white">E-mail et mot de passe</h2>
+          <p className="mt-1 text-sm text-white/65">
+            Mettez à jour votre adresse ou votre mot de passe (vérification serveur, messages en français).
+          </p>
+          <Link
+            href="/profile/edit#securite-compte"
+            className="mt-3 inline-flex rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white/90 hover:border-violet-400/40"
+          >
+            Ouvrir les paramètres de sécurité
+          </Link>
         </DashboardGlassCard>
       </div>
     </main>

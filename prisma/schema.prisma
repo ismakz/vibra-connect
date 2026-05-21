@@ -49,6 +49,13 @@ enum PublicationStatus {
   ARCHIVED
 }
 
+enum UrgentSaleStatus {
+  ACTIVE
+  EXPIRED
+  SOLD
+  CANCELLED
+}
+
 enum ContactType {
   WHATSAPP
   CALL
@@ -132,9 +139,36 @@ model User {
   @@index([cityId])
 }
 
+model Country {
+  id         String    @id @default(cuid())
+  name       String
+  slug       String    @unique
+  isActive   Boolean   @default(true)
+  sortOrder  Int       @default(0)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  provinces  Province[]
+}
+
+model Province {
+  id        String   @id @default(cuid())
+  countryId String
+  name      String
+  slug      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  country   Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  cities    City[]
+
+  @@unique([countryId, slug])
+  @@index([countryId])
+}
+
 model City {
   id         String     @id @default(cuid())
-  name       String     @unique
+  provinceId String?
+  province   Province?  @relation(fields: [provinceId], references: [id], onDelete: Restrict)
+  name       String
   slug       String     @unique
   isActive   Boolean    @default(true)
   createdAt  DateTime   @default(now())
@@ -144,6 +178,8 @@ model City {
   users      User[]
   bizaflowCityId String?
   integrationStatus IntegrationStatus @default(NOT_LINKED)
+
+  @@index([provinceId])
 }
 
 model Category {
@@ -224,6 +260,12 @@ model ProductService {
   isAvailable            Boolean           @default(true)
   isPromotion            Boolean           @default(false)
   promotionExpiresAt     DateTime?
+  isUrgentSale           Boolean           @default(false)
+  urgentSaleReason       String?
+  originalPrice          Decimal?
+  urgentPrice            Decimal?
+  urgentSaleEndsAt       DateTime?
+  urgentSaleStatus       UrgentSaleStatus  @default(CANCELLED)
   contactButtonLabel     String            @default("Contacter")
   status                 PublicationStatus @default(PUBLISHED)
   createdAt              DateTime          @default(now())
@@ -232,6 +274,7 @@ model ProductService {
   category               Category?         @relation(fields: [categoryId], references: [id])
 
   @@index([businessId, status])
+  @@index([isUrgentSale, urgentSaleStatus, urgentSaleEndsAt])
 }
 
 model Promotion {

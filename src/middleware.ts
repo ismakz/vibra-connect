@@ -4,6 +4,26 @@ import { type NextRequestWithAuth, withAuth } from "next-auth/middleware";
 
 import { isPlatformCeoRole } from "@/lib/ceo-platform";
 
+/** Routes accessibles sans session (SSR + fetch client landing / marketplace). */
+function isPublicRoute(pathname: string): boolean {
+  if (pathname === "/") return true;
+  if (pathname === "/logout") return true;
+  if (pathname === "/login" || pathname.startsWith("/login/")) return true;
+  if (pathname === "/register" || pathname.startsWith("/register/")) return true;
+  if (pathname === "/pricing" || pathname.startsWith("/pricing/")) return true;
+  if (pathname.startsWith("/explore")) return true;
+  if (pathname.startsWith("/b/")) return true;
+  if (pathname.startsWith("/invite/")) return true;
+  if (pathname.startsWith("/api/locations")) return true;
+  if (pathname.startsWith("/api/explore")) return true;
+  if (pathname.startsWith("/api/auth")) return true;
+  if (pathname.startsWith("/api/register")) return true;
+  if (pathname.startsWith("/api/businesses")) return true;
+  if (pathname === "/manifest.webmanifest") return true;
+  if (pathname === "/sw.js") return true;
+  return false;
+}
+
 const authMiddleware = withAuth(
   function middleware(req) {
     if (req.nextUrl.pathname === "/api/auth/error") {
@@ -67,6 +87,10 @@ export default function middleware(req: NextRequest, event: NextFetchEvent) {
     return NextResponse.redirect(url, 308);
   }
 
+  if (isPublicRoute(p)) {
+    return NextResponse.next();
+  }
+
   const needsAuth =
     p.startsWith("/dashboard") ||
     p.startsWith("/admin") ||
@@ -82,9 +106,18 @@ export default function middleware(req: NextRequest, event: NextFetchEvent) {
     return NextResponse.next();
   }
 
+  // Création business : pas d’exigence JWT côté Edge (withAuth). La page serveur
+  // applique `guardBusinessCreatePage` — évite les faux /login en prod quand le
+  // cookie session est lisible par Node mais pas décodé correctement en middleware.
+  if (p === "/dashboard/business/create" || p.startsWith("/dashboard/business/create/")) {
+    return NextResponse.next();
+  }
+
   return authMiddleware(req as NextRequestWithAuth, event);
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon\\.ico|manifest\\.webmanifest|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+  ],
 };

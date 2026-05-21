@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CheckCircle2, Clock3, MapPin, ShieldCheck, Sparkles, Star } from "lucide-react";
+import { CheckCircle2, Clock3, Flame, MapPin, ShieldCheck, Sparkles, Star } from "lucide-react";
 
 import { BusinessStickyContactBar } from "@/components/business/business-sticky-contact";
 import { ContactActions } from "@/components/business/contact-actions";
@@ -15,10 +15,27 @@ import {
   isBusinessSponsored,
   isDataImage,
 } from "@/lib/business-ui";
+import { buildWhatsAppLink } from "@/lib/integrations/whatsapp";
 import { getSimilarMarketplaceRows } from "@/lib/marketplace-queries";
 import { isPremiumBadgePlan } from "@/lib/subscription-rules";
 import { prisma } from "@/lib/prisma";
+import { decimalLikeToNumber, isUrgentSaleLiveForDisplay } from "@/lib/urgent-sale";
 import type { SubscriptionPlan } from "@prisma/client";
+
+type ProductPublicRow = {
+  id: string;
+  title: string;
+  description: string;
+  images: string[] | null;
+  price: unknown;
+  currency: string;
+  isUrgentSale: boolean;
+  urgentSaleStatus: string;
+  urgentSaleReason: string | null;
+  originalPrice: unknown;
+  urgentPrice: unknown;
+  urgentSaleEndsAt: Date | null;
+};
 
 type BusinessViewModel = {
   id: string;
@@ -44,13 +61,18 @@ type BusinessViewModel = {
   cityId: string;
   city: { name: string };
   category: { name: string };
-  productServices: Array<{ id: string; title: string; description: string; images: string[] | null }>;
+  productServices: ProductPublicRow[];
   promotions: Array<{ id: string; title: string; description: string; imageUrl: string | null }>;
   reviews: Array<{ id: string; rating: number; comment: string | null; user: { name: string | null } | null }>;
 };
 
 function shouldUseUnoptimized(src: string) {
   return isDataImage(src);
+}
+
+function formatMoneyVi(n: number | null, currency: string) {
+  if (n == null) return "Sur demande";
+  return `${n.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} ${currency}`;
 }
 
 function makeFallbackBusiness(slug: string): BusinessViewModel {
@@ -79,7 +101,7 @@ function makeFallbackBusiness(slug: string): BusinessViewModel {
     cityId: "fallback-city",
     city: { name: "Kinshasa" },
     category: { name: "Services" },
-    productServices: [] as Array<{ id: string; title: string; description: string; images: string[] | null }>,
+    productServices: [] as ProductPublicRow[],
     promotions: [] as Array<{ id: string; title: string; description: string; imageUrl: string | null }>,
     reviews: [] as Array<{ id: string; rating: number; comment: string | null; user: { name: string | null } | null }>,
   };
@@ -91,12 +113,30 @@ export default async function BusinessPublicPage({ params }: { params: Promise<{
   let databaseAvailable = true;
   let business: BusinessViewModel | null = null;
   try {
-    business = (await prisma.business.findUnique({
+    const found = await prisma.business.findUnique({
       where: { slug },
       include: {
         city: true,
         category: true,
-        productServices: { where: { status: "PUBLISHED" }, orderBy: { createdAt: "desc" }, take: 12 },
+        productServices: {
+          where: { status: "PUBLISHED" },
+          orderBy: { createdAt: "desc" },
+          take: 48,
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            images: true,
+            price: true,
+            currency: true,
+            isUrgentSale: true,
+            urgentSaleStatus: true,
+            urgentSaleReason: true,
+            originalPrice: true,
+            urgentPrice: true,
+            urgentSaleEndsAt: true,
+          },
+        },
         promotions: {
           where: {
             status: "PUBLISHED",
@@ -107,7 +147,37 @@ export default async function BusinessPublicPage({ params }: { params: Promise<{
         },
         reviews: { orderBy: { createdAt: "desc" }, include: { user: { select: { name: true } } }, take: 8 },
       },
-    })) as unknown as BusinessViewModel | null;
+    });
+    if (found) {
+      const sorted = [...found.productServices]
+        .sort((a, b) => {
+          const la = isUrgentSaleLiveForDisplay(
+            {
+              isUrgentSale: a.isUrgentSale,
+              urgentSaleStatus: a.urgentSaleStatus,
+              urgentSaleEndsAt: a.urgentSaleEndsAt,
+              originalPrice: a.originalPrice,
+              urgentPrice: a.urgentPrice,
+            },
+            now,
+          );
+          const lb = isUrgentSaleLiveForDisplay(
+            {
+              isUrgentSale: b.isUrgentSale,
+              urgentSaleStatus: b.urgentSaleStatus,
+              urgentSaleEndsAt: b.urgentSaleEndsAt,
+              originalPrice: b.originalPrice,
+              urgentPrice: b.urgentPrice,
+            },
+            now,
+          );
+          return Number(lb) - Number(la);
+        })
+        .slice(0, 12);
+      business = { ...found, productServices: sorted } as unknown as BusinessViewModel;
+    } else {
+      business = null;
+    }
     if (business && !business.id.startsWith("fallback")) {
       await prisma.businessViewEvent.create({ data: { businessId: business.id, source: "profile" } });
     }
@@ -127,6 +197,7 @@ export default async function BusinessPublicPage({ params }: { params: Promise<{
   const phone = business.phoneNumber ?? business.phone;
   const whatsapp = business.whatsappNumber ?? business.whatsapp;
   const whatsappLink = whatsapp ? buildWhatsAppUrl(whatsapp, business.name) : null;
+  const contactForProductWa = whatsapp ?? phone;
   const directionLink = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${business.address ?? ""} ${business.city.name}`)}`;
   const sponsored = isBusinessSponsored(business.featuredUntil, now);
   const openNow = isBusinessOpen(business.openingHours ?? null, now, business.slug);
@@ -294,12 +365,79 @@ export default async function BusinessPublicPage({ params }: { params: Promise<{
               <h2 className="text-xl font-bold">Produits & services</h2>
               {business.productServices.length > 0 ? (
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
-                  {business.productServices.map((item) => (
-                    <article key={item.id} className="rounded-xl border border-white/10 bg-white/5 p-4">
-                      <h3 className="font-semibold">{item.title}</h3>
-                      <p className="mt-2 line-clamp-4 text-sm text-white/75">{item.description}</p>
-                    </article>
-                  ))}
+                  {business.productServices.map((item) => {
+                    const urgentLive = isUrgentSaleLiveForDisplay(
+                      {
+                        isUrgentSale: item.isUrgentSale,
+                        urgentSaleStatus: item.urgentSaleStatus,
+                        urgentSaleEndsAt: item.urgentSaleEndsAt,
+                        originalPrice: item.originalPrice,
+                        urgentPrice: item.urgentPrice,
+                      },
+                      now,
+                    );
+                    const orig = decimalLikeToNumber(item.originalPrice);
+                    const urg = decimalLikeToNumber(item.urgentPrice);
+                    const listPrice = decimalLikeToNumber(item.price);
+                    const prodWaHref = contactForProductWa
+                      ? buildWhatsAppLink(
+                          contactForProductWa,
+                          `Bonjour, je suis intéressé(e) par « ${item.title} »${urgentLive ? " (vente en urgence)" : ""} — ${business.name} sur VIBRA CONNECT.`,
+                        )
+                      : null;
+                    return (
+                      <article
+                        key={item.id}
+                        className={[
+                          "rounded-xl border p-4 backdrop-blur-sm",
+                          urgentLive
+                            ? "border-orange-400/35 bg-gradient-to-br from-orange-500/15 via-rose-500/5 to-white/5"
+                            : "border-white/10 bg-white/5",
+                        ].join(" ")}
+                      >
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="font-semibold">{item.title}</h3>
+                          {urgentLive && (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-orange-400/40 bg-orange-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-orange-50">
+                              <Flame className="h-3 w-3" />
+                              Vente en urgence
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-2 line-clamp-4 text-sm text-white/75">{item.description}</p>
+                        {urgentLive && orig != null && urg != null ? (
+                          <div className="mt-3 space-y-1">
+                            <div className="flex flex-wrap items-baseline gap-2">
+                              <span className="text-sm text-white/45 line-through">{formatMoneyVi(orig, item.currency)}</span>
+                              <span className="text-lg font-black text-emerald-300">{formatMoneyVi(urg, item.currency)}</span>
+                            </div>
+                            {item.urgentSaleReason ? (
+                              <p className="line-clamp-2 text-xs text-white/65">{item.urgentSaleReason}</p>
+                            ) : null}
+                            {item.urgentSaleEndsAt ? (
+                              <p className="text-xs text-orange-100/90">
+                                Jusqu’au {item.urgentSaleEndsAt.toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}
+                              </p>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <p className="mt-3 text-sm font-semibold text-cyan-200/90">{formatMoneyVi(listPrice, item.currency)}</p>
+                        )}
+                        {prodWaHref ? (
+                          <a
+                            href={prodWaHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 to-green-400 px-3 py-2 text-sm font-semibold text-black shadow-[0_0_18px_rgba(16,185,129,0.25)] hover:brightness-110 sm:w-auto"
+                          >
+                            WhatsApp
+                          </a>
+                        ) : (
+                          <p className="mt-3 text-xs text-white/45">WhatsApp non renseigné pour ce produit.</p>
+                        )}
+                      </article>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/75">

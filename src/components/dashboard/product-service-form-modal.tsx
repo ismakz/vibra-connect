@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ComingSoonButton } from "@/components/dashboard/coming-soon-button";
+import { ImageUploadField } from "@/components/upload/image-upload-field";
+import { isUrgentSaleLiveForDisplay } from "@/lib/urgent-sale";
 
 export type ProductServiceFormInitial = {
   id: string;
@@ -14,6 +16,12 @@ export type ProductServiceFormInitial = {
   imageUrl: string;
   isAvailable: boolean;
   isPromotion: boolean;
+  isUrgentSale?: boolean;
+  originalPrice?: number | null;
+  urgentPrice?: number | null;
+  urgentSaleReason?: string | null;
+  urgentSaleEndsAt?: string | null;
+  urgentSaleStatus?: string;
 };
 
 const defaultForm = {
@@ -24,11 +32,48 @@ const defaultForm = {
   imageUrl: "",
   isAvailable: true,
   isPromotion: false,
+  isUrgentSale: false,
+  originalPriceInput: "",
+  urgentPriceInput: "",
+  urgentSaleReason: "",
+  urgentSaleEndsAtLocal: "",
 };
 
 type FormState = typeof defaultForm;
 
+function fromIsoToDatetimeLocal(iso: string): string {
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
 function formFromInitial(initial: ProductServiceFormInitial): FormState {
+  const rowLike = {
+    isUrgentSale: initial.isUrgentSale ?? false,
+    urgentSaleStatus: initial.urgentSaleStatus ?? "CANCELLED",
+    urgentSaleEndsAt: initial.urgentSaleEndsAt ? new Date(initial.urgentSaleEndsAt) : null,
+    originalPrice: initial.originalPrice,
+    urgentPrice: initial.urgentPrice,
+  };
+  const live = isUrgentSaleLiveForDisplay(rowLike);
+
+  if (live && initial.originalPrice != null && initial.urgentPrice != null && initial.urgentSaleEndsAt) {
+    return {
+      title: initial.title,
+      description: initial.description,
+      priceInput: String(initial.originalPrice),
+      currency: initial.currency || "USD",
+      imageUrl: initial.imageUrl,
+      isAvailable: initial.isAvailable,
+      isPromotion: initial.isPromotion,
+      isUrgentSale: true,
+      originalPriceInput: String(initial.originalPrice),
+      urgentPriceInput: String(initial.urgentPrice),
+      urgentSaleReason: initial.urgentSaleReason ?? "",
+      urgentSaleEndsAtLocal: fromIsoToDatetimeLocal(initial.urgentSaleEndsAt),
+    };
+  }
+
   return {
     title: initial.title,
     description: initial.description,
@@ -37,6 +82,11 @@ function formFromInitial(initial: ProductServiceFormInitial): FormState {
     imageUrl: initial.imageUrl,
     isAvailable: initial.isAvailable,
     isPromotion: initial.isPromotion,
+    isUrgentSale: false,
+    originalPriceInput: "",
+    urgentPriceInput: "",
+    urgentSaleReason: "",
+    urgentSaleEndsAtLocal: "",
   };
 }
 
@@ -46,12 +96,14 @@ export function ProductServiceManageButton({
   className,
   databaseAvailable,
   initial,
+  imageUploadConfigured,
 }: {
   mode: "create" | "edit";
   label: string;
   className: string;
   databaseAvailable: boolean;
   initial?: ProductServiceFormInitial;
+  imageUploadConfigured: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [instanceKey, setInstanceKey] = useState(0);
@@ -91,6 +143,7 @@ export function ProductServiceManageButton({
           key={instanceKey}
           mode={mode}
           initial={mode === "edit" ? initial : undefined}
+          imageUploadConfigured={imageUploadConfigured}
           onClose={() => setOpen(false)}
         />
       ) : null}
@@ -102,10 +155,12 @@ function ProductServiceFormDialog({
   onClose,
   mode,
   initial,
+  imageUploadConfigured,
 }: {
   onClose: () => void;
   mode: "create" | "edit";
   initial?: ProductServiceFormInitial;
+  imageUploadConfigured: boolean;
 }) {
   const router = useRouter();
   const [form, setForm] = useState<FormState>(() =>
@@ -128,6 +183,13 @@ function ProductServiceFormDialog({
   const inputClass =
     "w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/40";
 
+  function parsePriceField(raw: string): number | null {
+    const t = raw.trim();
+    if (t === "") return null;
+    const n = Number(t.replace(",", ".").trim());
+    return Number.isFinite(n) ? n : null;
+  }
+
   function clientValidate(): string | null {
     if (!form.title.trim()) return "Le titre est requis.";
     if (!form.description.trim()) return "La description est requise.";
@@ -140,9 +202,23 @@ function ProductServiceFormDialog({
         return "URL d'image invalide.";
       }
     }
-    if (form.priceInput.trim()) {
-      const n = Number(form.priceInput.replace(",", ".").trim());
-      if (!Number.isFinite(n) || n < 0) return "Le prix doit être un nombre positif ou vide.";
+
+    if (form.isUrgentSale) {
+      const original = parsePriceField(form.originalPriceInput);
+      const urgent = parsePriceField(form.urgentPriceInput);
+      if (original === null || original < 0) return "Le prix normal est requis (nombre positif).";
+      if (urgent === null || urgent < 0) return "Le prix urgence est requis (nombre positif).";
+      if (urgent >= original) return "Le prix urgence doit être inférieur au prix normal.";
+      if (form.urgentSaleReason.trim().length > 160) return "La raison ne peut pas dépasser 160 caractères.";
+      if (!form.urgentSaleEndsAtLocal.trim()) return "Indiquez une date limite.";
+      const end = new Date(form.urgentSaleEndsAtLocal);
+      if (Number.isNaN(end.getTime())) return "Date limite invalide.";
+      if (end.getTime() <= Date.now()) return "La date limite doit être dans le futur.";
+    } else {
+      if (form.priceInput.trim()) {
+        const n = Number(form.priceInput.replace(",", ".").trim());
+        if (!Number.isFinite(n) || n < 0) return "Le prix doit être un nombre positif ou vide.";
+      }
     }
     return null;
   }
@@ -155,8 +231,10 @@ function ProductServiceFormDialog({
       return;
     }
 
-    const price =
-      form.priceInput.trim() === "" ? null : Number(form.priceInput.replace(",", ".").trim());
+    const isUrgent = form.isUrgentSale;
+    const originalPrice = isUrgent ? parsePriceField(form.originalPriceInput) : null;
+    const urgentPrice = isUrgent ? parsePriceField(form.urgentPriceInput) : null;
+    const price = isUrgent ? urgentPrice : form.priceInput.trim() === "" ? null : Number(form.priceInput.replace(",", ".").trim());
 
     const payload = {
       title: form.title.trim(),
@@ -166,6 +244,11 @@ function ProductServiceFormDialog({
       isAvailable: form.isAvailable,
       isPromotion: form.isPromotion,
       price,
+      isUrgentSale: isUrgent,
+      originalPrice: isUrgent ? originalPrice : null,
+      urgentPrice: isUrgent ? urgentPrice : null,
+      urgentSaleReason: isUrgent ? (form.urgentSaleReason.trim() || null) : null,
+      urgentSaleEndsAt: isUrgent ? new Date(form.urgentSaleEndsAtLocal).toISOString() : null,
     };
 
     setSaving(true);
@@ -233,30 +316,125 @@ function ProductServiceFormDialog({
               placeholder="Décrivez votre offre"
             />
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-xs font-medium text-white/80">Prix (optionnel)</label>
-              <input
-                value={form.priceInput}
-                onChange={(e) => setForm((p) => ({ ...p, priceInput: e.target.value }))}
-                className={inputClass}
-                placeholder="Laisser vide = sur demande"
-                inputMode="decimal"
-              />
+
+          <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-orange-400/25 bg-orange-500/10 px-3 py-2 text-sm">
+            <input
+              type="checkbox"
+              checked={form.isUrgentSale}
+              onChange={(e) =>
+                setForm((p) => ({
+                  ...p,
+                  isUrgentSale: e.target.checked,
+                  ...(e.target.checked
+                    ? {
+                        originalPriceInput: p.priceInput || p.originalPriceInput,
+                        urgentPriceInput: p.urgentPriceInput,
+                      }
+                    : {
+                        originalPriceInput: "",
+                        urgentPriceInput: "",
+                        urgentSaleReason: "",
+                        urgentSaleEndsAtLocal: "",
+                      }),
+                }))
+              }
+              className="h-4 w-4 rounded border-white/30 bg-white/10 accent-orange-400"
+            />
+            <span className="font-semibold text-orange-100">Vente en urgence</span>
+            <span className="text-xs text-white/55">— prix cassé, visible vite sur la marketplace</span>
+          </label>
+
+          {form.isUrgentSale ? (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-white/80">Prix normal</label>
+                  <input
+                    value={form.originalPriceInput}
+                    onChange={(e) => setForm((p) => ({ ...p, originalPriceInput: e.target.value }))}
+                    className={inputClass}
+                    placeholder="Ancien prix affiché barré"
+                    inputMode="decimal"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-white/80">Prix urgence</label>
+                  <input
+                    value={form.urgentPriceInput}
+                    onChange={(e) => setForm((p) => ({ ...p, urgentPriceInput: e.target.value }))}
+                    className={inputClass}
+                    placeholder="Prix promotionnel limité"
+                    inputMode="decimal"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-white/80">Devise</label>
+                <input
+                  value={form.currency}
+                  onChange={(e) => setForm((p) => ({ ...p, currency: e.target.value }))}
+                  className={inputClass}
+                  placeholder="USD"
+                  maxLength={10}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-white/80">Raison (max 160 caractères)</label>
+                <textarea
+                  value={form.urgentSaleReason}
+                  onChange={(e) => setForm((p) => ({ ...p, urgentSaleReason: e.target.value }))}
+                  className={`${inputClass} min-h-16`}
+                  placeholder="Ex. déstockage, déménagement, besoin de trésorerie…"
+                  maxLength={160}
+                />
+                <p className="mt-1 text-right text-[10px] text-white/45">{form.urgentSaleReason.length}/160</p>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-white/80">Date limite</label>
+                <input
+                  type="datetime-local"
+                  value={form.urgentSaleEndsAtLocal}
+                  onChange={(e) => setForm((p) => ({ ...p, urgentSaleEndsAtLocal: e.target.value }))}
+                  className={inputClass}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-white/80">Prix (optionnel)</label>
+                <input
+                  value={form.priceInput}
+                  onChange={(e) => setForm((p) => ({ ...p, priceInput: e.target.value }))}
+                  className={inputClass}
+                  placeholder="Laisser vide = sur demande"
+                  inputMode="decimal"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-white/80">Devise</label>
+                <input
+                  value={form.currency}
+                  onChange={(e) => setForm((p) => ({ ...p, currency: e.target.value }))}
+                  className={inputClass}
+                  placeholder="USD"
+                  maxLength={10}
+                />
+              </div>
             </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-white/80">Devise</label>
-              <input
-                value={form.currency}
-                onChange={(e) => setForm((p) => ({ ...p, currency: e.target.value }))}
-                className={inputClass}
-                placeholder="USD"
-                maxLength={10}
-              />
-            </div>
-          </div>
+          )}
+
           <div>
             <label className="mb-1 block text-xs font-medium text-white/80">Image (URL optionnelle)</label>
+            <ImageUploadField
+              purpose="product"
+              label="Image produit / service"
+              value={form.imageUrl}
+              onChange={(imageUrl) => setForm((p) => ({ ...p, imageUrl }))}
+              imageUploadConfigured={imageUploadConfigured}
+              disabled={saving}
+              className="mb-2"
+            />
             <input
               value={form.imageUrl}
               onChange={(e) => setForm((p) => ({ ...p, imageUrl: e.target.value }))}

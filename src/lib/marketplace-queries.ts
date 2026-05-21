@@ -2,6 +2,7 @@ import { Prisma, type SubscriptionPlan } from "@prisma/client";
 
 import { getPlatformSettings } from "@/lib/platform-settings";
 import { prisma } from "@/lib/prisma";
+import { decimalLikeToNumber, isUrgentSaleLiveForDisplay, urgentSaleLivePrismaWhere } from "@/lib/urgent-sale";
 
 export type MarketplaceSort = "popular" | "recent" | "views" | "premium";
 
@@ -43,6 +44,16 @@ function orderByForSort(
   }
 }
 
+export type MarketplaceUrgentHighlight = {
+  productId: string;
+  title: string;
+  originalPrice: number;
+  urgentPrice: number;
+  currency: string;
+  endsAt: string;
+  reason: string | null;
+};
+
 export type MarketplaceBusinessRow = {
   id: string;
   slug: string;
@@ -63,7 +74,56 @@ export type MarketplaceBusinessRow = {
   reviews: { rating: number }[];
   promotions: { id: string }[];
   _count: { viewEvents: number };
+  urgentHighlight: MarketplaceUrgentHighlight | null;
 };
+
+type BusinessWithMarketplaceInclude = Prisma.BusinessGetPayload<{
+  include: {
+    city: { select: { name: true; slug: true } };
+    category: { select: { name: true; slug: true } };
+    reviews: { select: { rating: true }; orderBy: { createdAt: "desc" }; take: 24 };
+    _count: { select: { viewEvents: true } };
+    promotions: { where: Prisma.PromotionWhereInput; select: { id: true }; take: 1 };
+    productServices: {
+      where: Prisma.ProductServiceWhereInput;
+      take: 1;
+      orderBy: { urgentSaleEndsAt: "asc" };
+      select: {
+        id: true;
+        title: true;
+        currency: true;
+        originalPrice: true;
+        urgentPrice: true;
+        urgentSaleEndsAt: true;
+        urgentSaleReason: true;
+        isUrgentSale: true;
+        urgentSaleStatus: true;
+      };
+    };
+  };
+}>;
+
+function mapToMarketplaceRow(b: BusinessWithMarketplaceInclude, now: Date): MarketplaceBusinessRow {
+  const { productServices, ...rest } = b;
+  const ps = productServices[0];
+  let urgentHighlight: MarketplaceUrgentHighlight | null = null;
+  if (ps && isUrgentSaleLiveForDisplay(ps, now)) {
+    const originalPrice = decimalLikeToNumber(ps.originalPrice);
+    const urgentPrice = decimalLikeToNumber(ps.urgentPrice);
+    if (originalPrice != null && urgentPrice != null && ps.urgentSaleEndsAt) {
+      urgentHighlight = {
+        productId: ps.id,
+        title: ps.title,
+        originalPrice,
+        urgentPrice,
+        currency: ps.currency,
+        endsAt: ps.urgentSaleEndsAt.toISOString(),
+        reason: ps.urgentSaleReason,
+      };
+    }
+  }
+  return { ...rest, urgentHighlight };
+}
 
 export async function getMarketplaceBusinessesPage(params: {
   q?: string;
@@ -71,6 +131,7 @@ export async function getMarketplaceBusinessesPage(params: {
   category?: string;
   plan?: MarketplacePlanFilter;
   sponsoredOnly?: boolean;
+  urgentOnly?: boolean;
   sort?: MarketplaceSort;
   page?: number;
 }): Promise<
@@ -94,6 +155,19 @@ export async function getMarketplaceBusinessesPage(params: {
   const planClause = planWhere(planFilter, now);
   const sponsoredClause: Prisma.BusinessWhereInput | undefined =
     params.sponsoredOnly ? { featuredUntil: { gt: now } } : undefined;
+
+  const urgentWhere = urgentSaleLivePrismaWhere(now);
+  const urgentBusinessClause: Prisma.BusinessWhereInput | undefined = params.urgentOnly
+    ? {
+        productServices: {
+          some: {
+            status: "PUBLISHED",
+            isAvailable: true,
+            ...urgentWhere,
+          },
+        },
+      }
+    : undefined;
 
   const promotionFilter = {
     status: "PUBLISHED" as const,
@@ -121,19 +195,40 @@ export async function getMarketplaceBusinessesPage(params: {
     ...(params.category ? { category: { slug: params.category } } : {}),
     ...(planClause ? planClause : {}),
     ...(sponsoredClause ? sponsoredClause : {}),
+    ...(urgentBusinessClause ? urgentBusinessClause : {}),
+  };
+
+  const include = {
+    ...marketplaceIncludeBase,
+    promotions: {
+      where: promotionFilter,
+      select: { id: true },
+      take: 1,
+    },
+    productServices: {
+      where: {
+        status: "PUBLISHED" as const,
+        isAvailable: true,
+        ...urgentWhere,
+      },
+      take: 1,
+      orderBy: { urgentSaleEndsAt: "asc" as const },
+      select: {
+        id: true,
+        title: true,
+        currency: true,
+        originalPrice: true,
+        urgentPrice: true,
+        urgentSaleEndsAt: true,
+        urgentSaleReason: true,
+        isUrgentSale: true,
+        urgentSaleStatus: true,
+      },
+    },
   };
 
   try {
-    const include = {
-      ...marketplaceIncludeBase,
-      promotions: {
-        where: promotionFilter,
-        select: { id: true },
-        take: 1,
-      },
-    };
-
-    const [total, rows] = await Promise.all([
+    const [total, rowsRaw] = await Promise.all([
       prisma.business.count({ where }),
       prisma.business.findMany({
         where,
@@ -146,9 +241,11 @@ export async function getMarketplaceBusinessesPage(params: {
 
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
+    const rows = rowsRaw.map((b) => mapToMarketplaceRow(b as BusinessWithMarketplaceInclude, now));
+
     return {
       ok: true,
-      rows: rows as MarketplaceBusinessRow[],
+      rows,
       total,
       page,
       pageSize: PAGE_SIZE,
@@ -171,8 +268,9 @@ export async function getSimilarMarketplaceRows(
     status: "PUBLISHED" as const,
     OR: [{ expiresAt: null }, { expiresAt: { gte: now } }],
   };
+  const urgentWhere = urgentSaleLivePrismaWhere(now);
   try {
-    const rows = await prisma.business.findMany({
+    const rowsRaw = await prisma.business.findMany({
       where: {
         id: { not: businessId },
         status: "ACTIVE",
@@ -196,11 +294,31 @@ export async function getSimilarMarketplaceRows(
           select: { id: true },
           take: 1,
         },
+        productServices: {
+          where: {
+            status: "PUBLISHED" as const,
+            isAvailable: true,
+            ...urgentWhere,
+          },
+          take: 1,
+          orderBy: { urgentSaleEndsAt: "asc" as const },
+          select: {
+            id: true,
+            title: true,
+            currency: true,
+            originalPrice: true,
+            urgentPrice: true,
+            urgentSaleEndsAt: true,
+            urgentSaleReason: true,
+            isUrgentSale: true,
+            urgentSaleStatus: true,
+          },
+        },
       },
       orderBy: [{ verified: "desc" }, { viewEvents: { _count: "desc" } }, { createdAt: "desc" }],
       take: limit,
     });
-    return rows as MarketplaceBusinessRow[];
+    return rowsRaw.map((b) => mapToMarketplaceRow(b as BusinessWithMarketplaceInclude, now));
   } catch {
     return [];
   }

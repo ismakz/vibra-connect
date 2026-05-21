@@ -1,18 +1,17 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
 import { BizapaySubscriptionForm } from "@/components/dashboard/bizapay-subscription-form";
 import { DashboardGlassCard } from "@/components/dashboard/dashboard-glass-card";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
-import { getAuthSession } from "@/lib/auth";
+import { guardBusinessOwnerArea } from "@/lib/dashboard-business-access";
+import { isImageUploadConfigured } from "@/lib/image-upload-config";
 import { getPlatformSettings } from "@/lib/platform-settings";
 import { prisma } from "@/lib/prisma";
 import { formatMarketplacePlan } from "@/lib/subscription-rules";
 
 export default async function BusinessSubscriptionPage() {
-  const session = await getAuthSession();
-  if (!session) redirect("/login");
-  if (session.user.role !== "BUSINESS_OWNER") redirect("/");
+  const session = await guardBusinessOwnerArea("/dashboard/business/subscription");
+  const imageUploadConfigured = isImageUploadConfigured();
 
   const [business, settings, payments] = await Promise.all([
     prisma.business.findFirst({
@@ -87,6 +86,7 @@ export default async function BusinessSubscriptionPage() {
                 airtelMoneyRdcCurrency: settings.airtelMoneyRdcCurrency,
                 airtelMoneyRdcEnabled: settings.airtelMoneyRdcEnabled,
               }}
+              imageUploadConfigured={imageUploadConfigured}
             />
           </div>
         </DashboardGlassCard>

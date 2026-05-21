@@ -5,9 +5,24 @@ import { useMemo, useState } from "react";
 
 import { ComingSoonButton } from "@/components/dashboard/coming-soon-button";
 import { DashboardGlassCard } from "@/components/dashboard/dashboard-glass-card";
+import { LocationCascadingSelects } from "@/components/location/location-cascading-selects";
+import { ImageUploadField } from "@/components/upload/image-upload-field";
 import { getBusinessCoverImage, getBusinessLogoImage, isDataImage } from "@/lib/business-ui";
+import type { LocationTreeCountry } from "@/lib/location-queries";
+import { selectForm } from "@/lib/select-classes";
 
 type Option = { id: string; name: string };
+
+function cityNameFromTree(tree: LocationTreeCountry[], cityId: string): string | undefined {
+  if (!cityId) return undefined;
+  for (const c of tree) {
+    for (const p of c.provinces) {
+      const city = p.cities.find((x) => x.id === cityId);
+      if (city) return city.name;
+    }
+  }
+  return undefined;
+}
 
 type FormState = {
   name: string;
@@ -27,16 +42,18 @@ type FormState = {
 
 export function BusinessEditForm({
   initialValues,
-  cities,
+  locationTree,
   categories,
   maxGalleryImages,
   databaseAvailable,
+  imageUploadConfigured,
 }: {
   initialValues: FormState;
-  cities: Option[];
+  locationTree: LocationTreeCountry[];
   categories: Option[];
   maxGalleryImages: number;
   databaseAvailable: boolean;
+  imageUploadConfigured: boolean;
 }) {
   const [values, setValues] = useState<FormState>(initialValues);
   const [status, setStatus] = useState<{ type: "idle" | "success" | "error"; message: string }>({
@@ -51,7 +68,7 @@ export function BusinessEditForm({
     .filter(Boolean)
     .slice(0, maxGalleryImages);
 
-  const cityName = cities.find((c) => c.id === values.cityId)?.name ?? "Ville";
+  const cityName = cityNameFromTree(locationTree, values.cityId) ?? "Ville";
   const categoryName = categories.find((c) => c.id === values.categoryId)?.name ?? "Catégorie";
 
   const preview = useMemo(() => {
@@ -159,7 +176,7 @@ export function BusinessEditForm({
             <select
               value={values.categoryId}
               onChange={(e) => setValues((p) => ({ ...p, categoryId: e.target.value }))}
-              className={inputClass}
+              className={selectForm}
             >
               <option value="">Catégorie</option>
               {categories.map((c) => (
@@ -168,18 +185,15 @@ export function BusinessEditForm({
                 </option>
               ))}
             </select>
-            <select
-              value={values.cityId}
-              onChange={(e) => setValues((p) => ({ ...p, cityId: e.target.value }))}
-              className={inputClass}
-            >
-              <option value="">Ville</option>
-              {cities.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+            <div className="md:col-span-2">
+              <LocationCascadingSelects
+                tree={locationTree}
+                value={values.cityId}
+                onChange={(id) => setValues((p) => ({ ...p, cityId: id }))}
+                valueMode="id"
+                disabled={!databaseAvailable}
+              />
+            </div>
             <input
               value={values.phone}
               onChange={(e) => setValues((p) => ({ ...p, phone: e.target.value }))}
@@ -216,31 +230,75 @@ export function BusinessEditForm({
         <DashboardGlassCard className="p-5">
           <h2 className="text-lg font-bold">Médias & contact</h2>
           <div className="mt-3 grid gap-3">
-            <input
-              value={values.logoUrl}
-              onChange={(e) => setValues((p) => ({ ...p, logoUrl: e.target.value }))}
-              placeholder="Logo URL"
-              className={inputClass}
-            />
-            <input
-              value={values.bannerUrl}
-              onChange={(e) => setValues((p) => ({ ...p, bannerUrl: e.target.value }))}
-              placeholder="Bannière URL"
-              className={inputClass}
-            />
-            <textarea
-              value={values.galleryImages}
-              onChange={(e) => setValues((p) => ({ ...p, galleryImages: e.target.value }))}
-              placeholder="Galerie images (URLs séparées par virgule ou ligne)"
-              className={`${inputClass} min-h-24`}
-            />
+            <div>
+              <span className="mb-1 block text-xs text-white/70">Logo URL</span>
+              <ImageUploadField
+                purpose="business-logo"
+                label="Logo (upload)"
+                value={values.logoUrl}
+                onChange={(logoUrl) => setValues((p) => ({ ...p, logoUrl }))}
+                imageUploadConfigured={imageUploadConfigured}
+                disabled={!databaseAvailable}
+                className="mb-2"
+              />
+              <input
+                value={values.logoUrl}
+                onChange={(e) => setValues((p) => ({ ...p, logoUrl: e.target.value }))}
+                placeholder="Logo URL"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <span className="mb-1 block text-xs text-white/70">Bannière URL</span>
+              <ImageUploadField
+                purpose="business-banner"
+                label="Bannière (upload)"
+                value={values.bannerUrl}
+                onChange={(bannerUrl) => setValues((p) => ({ ...p, bannerUrl }))}
+                imageUploadConfigured={imageUploadConfigured}
+                disabled={!databaseAvailable}
+                className="mb-2"
+              />
+              <input
+                value={values.bannerUrl}
+                onChange={(e) => setValues((p) => ({ ...p, bannerUrl: e.target.value }))}
+                placeholder="Bannière URL"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <span className="mb-1 block text-xs text-white/70">Galerie (URLs)</span>
+              <ImageUploadField
+                purpose="business-gallery"
+                label="Ajouter une image à la galerie (upload)"
+                value=""
+                onChange={(url) =>
+                  setValues((p) => {
+                    const cur = p.galleryImages.trim();
+                    if (!cur) return { ...p, galleryImages: url };
+                    const lines = cur.split(/\r?\n/).filter(Boolean);
+                    if (lines.length >= maxGalleryImages) return p;
+                    return { ...p, galleryImages: `${cur.replace(/\s+$/, "")}\n${url}` };
+                  })
+                }
+                imageUploadConfigured={imageUploadConfigured}
+                disabled={!databaseAvailable}
+                className="mb-2"
+              />
+              <textarea
+                value={values.galleryImages}
+                onChange={(e) => setValues((p) => ({ ...p, galleryImages: e.target.value }))}
+                placeholder="Galerie images (URLs séparées par virgule ou ligne)"
+                className={`${inputClass} min-h-24`}
+              />
+            </div>
             <p className="text-xs text-white/60">
               {galleryPreview.length}/{maxGalleryImages} images
             </p>
             <select
               value={values.contactPreference}
               onChange={(e) => setValues((p) => ({ ...p, contactPreference: e.target.value as FormState["contactPreference"] }))}
-              className={inputClass}
+              className={selectForm}
             >
               <option value="WHATSAPP">Préférence contact: WhatsApp</option>
               <option value="PHONE">Téléphone</option>

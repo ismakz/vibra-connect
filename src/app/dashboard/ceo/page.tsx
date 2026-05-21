@@ -11,14 +11,15 @@ import { PaymentRowActions } from "@/components/ceo/payment-row-actions";
 import { ReportRowActions } from "@/components/ceo/report-row-actions";
 import { CeoCreateAgentButton } from "@/components/ceo/create-agent-modal";
 import { CeoSectionNav } from "@/components/ceo/section-nav";
+import { UrgentSaleDisableButton } from "@/components/ceo/urgent-sale-disable-button";
 import { CeoUsersSection } from "@/components/ceo/users-section";
 import { DashboardGlassCard } from "@/components/dashboard/dashboard-glass-card";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { getAuthSession } from "@/lib/auth";
 import { CEO_API_OVERVIEW_PATH, isPlatformCeoRole } from "@/lib/ceo-platform";
 import { getCeoCommandCenterOverview } from "@/lib/ceo-queries";
+import { getLocationTree } from "@/lib/location-queries";
 import { getPlatformSettings } from "@/lib/platform-settings";
-import { prisma } from "@/lib/prisma";
 
 type SearchParams = Promise<{
   bq?: string;
@@ -36,14 +37,7 @@ export default async function CeoCommandCenterPage({ searchParams }: { searchPar
 
   const sp = await searchParams;
   const [overview, platformSettings] = await Promise.all([getCeoCommandCenterOverview(), getPlatformSettings()]);
-  const ceoCities =
-    overview.ok === true
-      ? await prisma.city.findMany({
-          where: { isActive: true },
-          orderBy: { name: "asc" },
-          select: { id: true, name: true },
-        })
-      : [];
+  const ceoLocationTree = overview.ok === true ? await getLocationTree().catch(() => []) : [];
 
   return (
     <main className="relative mx-auto min-h-screen max-w-7xl px-4 py-8 text-white">
@@ -112,6 +106,12 @@ export default async function CeoCommandCenterPage({ searchParams }: { searchPar
             </p>
             <ul className="mt-3 list-inside list-disc space-y-1 text-sm text-white/80">
               <li>
+                <a href="#moderation" className="text-cyan-200 hover:underline">
+                  Ventes en urgence
+                </a>{" "}
+                — retrait abusif (badge retiré, prix catalogue restauré).
+              </li>
+              <li>
                 <a href="#business" className="text-cyan-200 hover:underline">
                   Businesses
                 </a>{" "}
@@ -153,9 +153,9 @@ export default async function CeoCommandCenterPage({ searchParams }: { searchPar
                   </p>
                 </div>
                 <CeoCreateAgentButton
-                  cities={ceoCities}
+                  locationTree={ceoLocationTree}
                   defaultCommissionRate={platformSettings.defaultAgentCommission}
-                  disabled={ceoCities.length === 0}
+                  disabled={ceoLocationTree.length === 0}
                 />
               </div>
               <div className="overflow-x-auto">
@@ -306,6 +306,55 @@ export default async function CeoCommandCenterPage({ searchParams }: { searchPar
                   Signalements ouverts — business « bloqués » (suspendus + rejetés) :{" "}
                   <span className="font-semibold text-amber-200">{overview.blockedBusinesses}</span>
                 </p>
+                <p className="mt-2 text-sm text-white/70">
+                  Ventes en urgence actives (marketplace) :{" "}
+                  <span className="font-semibold text-orange-200">{overview.kpis.activeUrgentSales}</span>
+                </p>
+              </div>
+              <div className="border-b border-white/10 p-4">
+                <h3 className="text-sm font-bold text-orange-100">Ventes en urgence</h3>
+                <p className="mt-1 text-xs text-white/55">
+                  Désactivation = retire le badge urgence et restaure le prix catalogue. Le produit reste publié.
+                </p>
+                <div className="mt-3 overflow-x-auto">
+                  <table className="w-full min-w-[920px] text-left text-sm">
+                    <thead className="border-b border-white/10 bg-white/5 text-xs uppercase tracking-wide text-white/55">
+                      <tr>
+                        <th className="px-3 py-3">Produit</th>
+                        <th className="px-3 py-3">Business</th>
+                        <th className="px-3 py-3">Prix</th>
+                        <th className="px-3 py-3">Fin</th>
+                        <th className="px-3 py-3">Raison</th>
+                        <th className="px-3 py-3">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {overview.moderationUrgentSales.map((u) => (
+                        <tr key={u.id} className="border-b border-white/5 hover:bg-white/[0.03]">
+                          <td className="px-3 py-3 text-white/90">{u.title}</td>
+                          <td className="px-3 py-3">
+                            <Link href={`/b/${u.businessSlug}`} className="text-cyan-200 hover:underline" target="_blank">
+                              {u.businessName}
+                            </Link>
+                          </td>
+                          <td className="px-3 py-3 text-xs text-white/75">
+                            <span className="text-white/45 line-through">{u.originalPrice.toLocaleString("fr-FR")}</span>{" "}
+                            → <span className="font-semibold text-emerald-200">{u.urgentPrice.toLocaleString("fr-FR")}</span>{" "}
+                            {u.currency}
+                          </td>
+                          <td className="px-3 py-3 text-xs text-white/55">{u.endsAt.toLocaleString("fr-FR")}</td>
+                          <td className="max-w-[220px] truncate px-3 py-3 text-xs text-white/65">{u.reason ?? "—"}</td>
+                          <td className="px-3 py-3">
+                            <UrgentSaleDisableButton productId={u.id} />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {overview.moderationUrgentSales.length === 0 && (
+                    <p className="p-4 text-sm text-white/50">Aucune vente en urgence active.</p>
+                  )}
+                </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[720px] text-left text-sm">

@@ -1,12 +1,11 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { BarChart3, LineChart, MessageCircle, PhoneCall, Share2, TrendingUp } from "lucide-react";
 
 import { DashboardEmptyState } from "@/components/dashboard/dashboard-empty-state";
 import { DashboardFilterBar } from "@/components/dashboard/dashboard-filter-bar";
 import { DashboardGlassCard } from "@/components/dashboard/dashboard-glass-card";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
-import { getAuthSession } from "@/lib/auth";
+import { guardBusinessOwnerArea } from "@/lib/dashboard-business-access";
 import { prisma } from "@/lib/prisma";
 
 type SearchParams = Promise<{
@@ -25,9 +24,7 @@ function formatDay(d: Date) {
 }
 
 export default async function BusinessStatsPage({ searchParams }: { searchParams: SearchParams }) {
-  const session = await getAuthSession();
-  if (!session) redirect("/login");
-  if (session.user.role !== "BUSINESS_OWNER") redirect("/");
+  const session = await guardBusinessOwnerArea("/dashboard/business/stats");
 
   const params = await searchParams;
   const range = params.status ?? "30d";

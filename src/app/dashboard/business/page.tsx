@@ -6,10 +6,9 @@ import { BusinessActivityChart } from "@/components/dashboard/business-activity-
 import { DashboardEmptyState } from "@/components/dashboard/dashboard-empty-state";
 import { DashboardGlassCard } from "@/components/dashboard/dashboard-glass-card";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
-import { getAuthSession } from "@/lib/auth";
+import { guardBusinessOwnerArea } from "@/lib/dashboard-business-access";
 import { bucketCountsByDay } from "@/lib/dashboard-business-analytics";
 import { prisma } from "@/lib/prisma";
-import { slugify } from "@/lib/slug";
 import { formatMarketplacePlan, getBusinessSubscriptionUi, hasAdvancedAnalytics } from "@/lib/subscription-rules";
 
 type DashboardBusiness = {
@@ -29,14 +28,10 @@ type DashboardBusiness = {
 };
 
 export default async function BusinessDashboardPage() {
-  const session = await getAuthSession();
-  if (!session) redirect("/login");
-  if (session.user.role !== "BUSINESS_OWNER") redirect("/");
+  const session = await guardBusinessOwnerArea("/dashboard/business");
 
   let databaseAvailable = true;
   let business: DashboardBusiness | null = null;
-  let cities: Array<{ id: string; name: string }> = [];
-  let categories: Array<{ id: string; name: string }> = [];
   let activeProductsCount = 0;
   let whatsappClicks = 0;
   let callClicks = 0;
@@ -56,10 +51,6 @@ export default async function BusinessDashboardPage() {
         _count: { select: { contactClickEvents: true, viewEvents: true, productServices: true } },
       },
     })) as DashboardBusiness | null;
-    [cities, categories] = await Promise.all([
-      prisma.city.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
-      prisma.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
-    ]);
 
     if (business) {
       const now = new Date();
@@ -143,52 +134,10 @@ export default async function BusinessDashboardPage() {
     }
   } catch {
     databaseAvailable = false;
-    cities = [{ id: "fallback-city", name: "Kinshasa" }];
-    categories = [{ id: "fallback-category", name: "Services" }];
   }
 
-  async function createBusiness(formData: FormData) {
-    "use server";
-    const current = await getAuthSession();
-    if (!current || current.user.role !== "BUSINESS_OWNER") return;
-    const name = formData.get("name")?.toString() ?? "";
-    const cityId = formData.get("cityId")?.toString() ?? "";
-    const categoryId = formData.get("categoryId")?.toString() ?? "";
-    if (!name || !cityId || !categoryId) return;
-    const baseSlug = slugify(name);
-    const exists = await prisma.business.count({ where: { slug: { startsWith: baseSlug } } });
-    const slug = exists > 0 ? `${baseSlug}-${exists + 1}` : baseSlug;
-    const owner = await prisma.user.findUnique({
-      where: { id: current.user.id },
-      select: { referredByAgentId: true },
-    });
-    const agentProfile = owner?.referredByAgentId
-      ? await prisma.agentProfile.findUnique({
-          where: { id: owner.referredByAgentId },
-          select: { id: true, userId: true },
-        })
-      : null;
-    const referralAgentId = agentProfile && agentProfile.userId !== current.user.id ? agentProfile.id : null;
-
-    await prisma.$transaction(async (tx) => {
-      await tx.business.create({
-        data: {
-          name,
-          slug,
-          cityId,
-          categoryId,
-          ownerId: current.user.id,
-          status: "PENDING",
-          referralAgentId,
-        },
-      });
-      if (referralAgentId) {
-        await tx.agentProfile.update({
-          where: { id: referralAgentId },
-          data: { totalRecruited: { increment: 1 } },
-        });
-      }
-    });
+  if (databaseAvailable && !business) {
+    redirect("/dashboard/business/create");
   }
 
   return (
@@ -217,25 +166,14 @@ export default async function BusinessDashboardPage() {
         </div>
       )}
 
-      {!business && (
-        <DashboardGlassCard className="mt-4 p-5">
-          <form action={createBusiness} className="space-y-3">
-          <p className="text-sm text-white/75">Creez votre profil business pour commencer.</p>
-          <input name="name" placeholder="Nom du business" className="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2" required />
-          <div className="grid gap-3 md:grid-cols-2">
-            <select name="cityId" className="rounded-lg border border-white/20 bg-white/10 px-3 py-2" required>
-              <option value="">Ville</option>
-              {cities.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}
-            </select>
-            <select name="categoryId" className="rounded-lg border border-white/20 bg-white/10 px-3 py-2" required>
-              <option value="">Categorie</option>
-              {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
-            </select>
-          </div>
-          <button className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold">Creer le business</button>
-          </form>
-        </DashboardGlassCard>
+      {!databaseAvailable && (
+        <DashboardEmptyState
+          icon={<Store className="h-5 w-5 text-amber-200" />}
+          title="Données business indisponibles"
+          description="La base de données ne répond pas. Réessayez plus tard pour afficher votre tableau de bord."
+        />
       )}
+
       {business && (
         <section className="mt-5 space-y-5">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">

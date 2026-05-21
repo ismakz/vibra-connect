@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 
 import { DEFAULT_CATEGORY_NAMES } from "@/lib/category-catalog";
+import { getLocationTree } from "@/lib/location-queries";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/slug";
 
@@ -18,8 +19,12 @@ const fallbackCategories = DEFAULT_CATEGORY_NAMES.map((name) => ({
 
 export async function getLandingData() {
   try {
-    const [cities, categories, featuredRaw] = await Promise.all([
-      prisma.city.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
+    const [cities, categories, featuredRaw, locationTree] = await Promise.all([
+      prisma.city.findMany({
+        where: { isActive: true },
+        orderBy: { name: "asc" },
+        select: { id: true, name: true, slug: true },
+      }),
       prisma.category.findMany({ orderBy: { name: "asc" }, take: 56 }),
       prisma.business.findMany({
         where: {
@@ -44,6 +49,7 @@ export async function getLandingData() {
         orderBy: [{ verified: "desc" }, { createdAt: "desc" }],
         take: 6,
       }),
+      getLocationTree(),
     ]);
 
     const nowMs = Date.now();
@@ -74,12 +80,13 @@ export async function getLandingData() {
       };
     });
 
-    return { cities, categories, featured, databaseAvailable: true };
+    return { cities, categories, featured, locationTree, databaseAvailable: true };
   } catch {
     return {
       cities: fallbackCities,
       categories: fallbackCategories,
       featured: [],
+      locationTree: [],
       databaseAvailable: false,
     };
   }
@@ -87,14 +94,10 @@ export async function getLandingData() {
 
 export async function getExplorerFilters() {
   try {
-    const [cities, categories] = await Promise.all([
-      prisma.city.findMany({ orderBy: { name: "asc" } }),
-      prisma.category.findMany({ orderBy: { name: "asc" } }),
-    ]);
-    return { cities, categories, databaseAvailable: true };
+    const categories = await prisma.category.findMany({ orderBy: { name: "asc" } });
+    return { categories, databaseAvailable: true };
   } catch {
     return {
-      cities: fallbackCities,
       categories: fallbackCategories,
       databaseAvailable: false,
     };

@@ -36,6 +36,7 @@ export async function GET(req: Request) {
     category: searchParams.get("category") ?? undefined,
     plan: parsePlan(searchParams.get("plan")),
     sponsoredOnly: searchParams.get("sponsored") === "1",
+    urgentOnly: searchParams.get("urgent") === "1",
     sort: parseSort(searchParams.get("sort")),
     page,
   });

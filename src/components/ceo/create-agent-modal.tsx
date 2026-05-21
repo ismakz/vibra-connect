@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { UserPlus, X } from "lucide-react";
 
-export type CeoCityOption = { id: string; name: string };
+import { LocationCascadingSelects } from "@/components/location/location-cascading-selects";
+import type { LocationTreeCountry } from "@/lib/location-queries";
 
 type FormState = {
   fullName: string;
@@ -31,11 +32,11 @@ type SuccessPayload = {
 };
 
 export function CeoCreateAgentButton({
-  cities,
+  locationTree,
   defaultCommissionRate,
   disabled,
 }: {
-  cities: CeoCityOption[];
+  locationTree: LocationTreeCountry[];
   defaultCommissionRate: number;
   disabled?: boolean;
 }) {
@@ -71,7 +72,7 @@ export function CeoCreateAgentButton({
       {open ? (
         <CeoCreateAgentDialog
           key={key}
-          cities={cities}
+          locationTree={locationTree}
           defaultCommissionRate={defaultCommissionRate}
           onClose={() => setOpen(false)}
         />
@@ -81,11 +82,11 @@ export function CeoCreateAgentButton({
 }
 
 function CeoCreateAgentDialog({
-  cities,
+  locationTree,
   defaultCommissionRate,
   onClose,
 }: {
-  cities: CeoCityOption[];
+  locationTree: LocationTreeCountry[];
   defaultCommissionRate: number;
   onClose: () => void;
 }) {
@@ -300,19 +301,13 @@ function CeoCreateAgentDialog({
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-white/80">Ville</label>
-                <select
+                <label className="mb-1 block text-xs font-medium text-white/80">Localisation</label>
+                <LocationCascadingSelects
+                  tree={locationTree}
                   value={form.cityId}
-                  onChange={(e) => setForm((p) => ({ ...p, cityId: e.target.value }))}
-                  className={`${inputClass} cursor-pointer`}
-                >
-                  <option value="">— Choisir —</option>
-                  {cities.map((c) => (
-                    <option key={c.id} value={c.id} className="bg-slate-900 text-white">
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(id) => setForm((p) => ({ ...p, cityId: id }))}
+                  valueMode="id"
+                />
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-white/80">Mot de passe temporaire</label>

@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { Megaphone } from "lucide-react";
 
 import { ComingSoonButton } from "@/components/dashboard/coming-soon-button";
@@ -10,6 +9,7 @@ import { DashboardGlassCard } from "@/components/dashboard/dashboard-glass-card"
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { getBusinessCoverImage, isDataImage } from "@/lib/business-ui";
 import { getAuthSession } from "@/lib/auth";
+import { guardBusinessOwnerArea } from "@/lib/dashboard-business-access";
 import { prisma } from "@/lib/prisma";
 
 type SearchParams = Promise<{
@@ -42,9 +42,7 @@ function formatDate(value: Date | null) {
 }
 
 export default async function BusinessPromotionsPage({ searchParams }: { searchParams: SearchParams }) {
-  const session = await getAuthSession();
-  if (!session) redirect("/login");
-  if (session.user.role !== "BUSINESS_OWNER") redirect("/");
+  const session = await guardBusinessOwnerArea("/dashboard/business/promotions");
 
   const params = await searchParams;
   const q = params.q?.trim() ?? "";

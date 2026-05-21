@@ -7,6 +7,7 @@ import { superAdminSuspendUser, superAdminUpdateUserRole } from "@/app/dashboard
 import type { UserRole } from "@prisma/client";
 
 import { formatUserRoleForUi } from "@/lib/ceo-platform";
+import { selectCeoRole } from "@/lib/select-classes";
 
 const roles: UserRole[] = ["SUPER_ADMIN", "BUSINESS_OWNER", "AGENT", "CLIENT"];
 
@@ -40,7 +41,7 @@ export function UserRowActions({ userId, currentRole }: { userId: string; curren
         disabled={pending}
         value={currentRole}
         onChange={(e) => changeRole(e.target.value as UserRole)}
-        className="max-w-[140px] rounded-lg border border-white/20 bg-white/10 px-2 py-1 text-[10px] font-semibold sm:text-xs"
+        className={selectCeoRole}
         aria-label="Changer le rôle"
       >
         {roles.map((r) => (

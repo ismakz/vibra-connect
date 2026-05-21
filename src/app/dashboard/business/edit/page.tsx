@@ -1,16 +1,16 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
 import { BusinessEditForm } from "@/components/dashboard/business-edit-form";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
-import { getAuthSession } from "@/lib/auth";
+import { guardBusinessOwnerArea } from "@/lib/dashboard-business-access";
+import { isImageUploadConfigured } from "@/lib/image-upload-config";
+import { getLocationTree } from "@/lib/location-queries";
 import { FALLBACK_PLATFORM_SETTINGS, getPlatformSettings } from "@/lib/platform-settings";
 import { prisma } from "@/lib/prisma";
 
 export default async function BusinessEditPage() {
-  const session = await getAuthSession();
-  if (!session) redirect("/login");
-  if (session.user.role !== "BUSINESS_OWNER") redirect("/");
+  const session = await guardBusinessOwnerArea("/dashboard/business/edit");
+  const imageUploadConfigured = isImageUploadConfigured();
 
   let databaseAvailable = true;
   let business: {
@@ -29,12 +29,12 @@ export default async function BusinessEditPage() {
     galleryImages: string[];
     contactPreference: "WHATSAPP" | "PHONE" | "BIZAFLOW_TELECOM" | "INTERNAL_MESSAGE" | "EMAIL";
   } | null = null;
-  let cities: Array<{ id: string; name: string }> = [];
+  let locationTree: Awaited<ReturnType<typeof getLocationTree>> = [];
   let categories: Array<{ id: string; name: string }> = [];
   let maxGalleryImages = FALLBACK_PLATFORM_SETTINGS.maxGalleryImages;
 
   try {
-    [business, cities, categories] = await Promise.all([
+    [business, categories, locationTree] = await Promise.all([
       prisma.business.findFirst({
         where: { ownerId: session.user.id },
         select: {
@@ -54,14 +54,14 @@ export default async function BusinessEditPage() {
           contactPreference: true,
         },
       }),
-      prisma.city.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
       prisma.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+      getLocationTree(),
     ]);
     const settings = await getPlatformSettings();
     maxGalleryImages = settings.maxGalleryImages;
   } catch {
     databaseAvailable = false;
-    cities = [{ id: "fallback-city", name: "Kinshasa" }];
+    locationTree = [];
     categories = [{ id: "fallback-category", name: "Services" }];
   }
 
@@ -103,13 +103,14 @@ export default async function BusinessEditPage() {
       <BusinessEditForm
         databaseAvailable={databaseAvailable}
         maxGalleryImages={maxGalleryImages}
-        cities={cities}
+        locationTree={locationTree}
         categories={categories}
+        imageUploadConfigured={imageUploadConfigured}
         initialValues={{
           name: business?.name ?? "Business local VIBRA CONNECT",
           description: business?.description ?? "",
           categoryId: business?.categoryId ?? categories[0]?.id ?? "",
-          cityId: business?.cityId ?? cities[0]?.id ?? "",
+          cityId: business?.cityId ?? "",
           address: business?.address ?? "",
           email: business?.email ?? "",
           phone: business?.phone ?? "",

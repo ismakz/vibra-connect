@@ -1,11 +1,15 @@
-import { getAuthSession } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { TopNavClient, type TopNavUser } from "@/components/top-nav-client";
+import { getAuthSession } from "@/lib/auth";
+import { getBusinessHref } from "@/lib/nav-user";
+import { prisma } from "@/lib/prisma";
 
 export async function TopNav() {
   const session = await getAuthSession();
-  if (!session?.user?.id) {
-    return <TopNavClient navUser={null} />;
+  const isAuthenticated = Boolean(session?.user?.id);
+  const businessHref = getBusinessHref(session?.user?.role ?? null, isAuthenticated);
+
+  if (!isAuthenticated || !session?.user?.id) {
+    return <TopNavClient navUser={null} businessHref={businessHref} isAuthenticated={false} />;
   }
 
   const fallback: TopNavUser = {
@@ -35,5 +39,7 @@ export async function TopNav() {
     navUser = fallback;
   }
 
-  return <TopNavClient navUser={navUser} />;
+  const hrefFromDb = getBusinessHref(navUser.role, true);
+
+  return <TopNavClient navUser={navUser} businessHref={hrefFromDb} isAuthenticated />;
 }

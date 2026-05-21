@@ -5,6 +5,7 @@ import {
   Building2,
   CreditCard,
   Eye,
+  Flame,
   MousePointerClick,
   Percent,
   Users,
@@ -38,6 +39,7 @@ export function CeoKpiStrip(props: {
     businessViews: number;
     whatsappClicks: number;
     conversionRate: number;
+    activeUrgentSales: number;
   };
 }) {
   const k = props.kpis;
@@ -54,12 +56,13 @@ export function CeoKpiStrip(props: {
     { icon: Eye, label: "Vues vitrine", value: fmt(k.businessViews), sub: "événements vues" },
     { icon: MousePointerClick, label: "Clics WhatsApp", value: fmt(k.whatsappClicks), sub: "contacts" },
     { icon: Percent, label: "Taux conversion", value: `${k.conversionRate} %`, sub: "clics WA / vues" },
+    { icon: Flame, label: "Ventes urgentes", value: fmt(k.activeUrgentSales), sub: "actives marketplace" },
   ];
 
   return (
     <motion.div
       id="kpis"
-      className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+      className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
       variants={container}
       initial="hidden"
       animate="show"

@@ -2,8 +2,10 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { MapPin, SlidersHorizontal, Sparkles } from "lucide-react";
 
+import { ExploreMarketplaceFiltersForm } from "@/components/marketplace/explore-marketplace-filters-form";
 import { ExploreResults } from "@/components/marketplace/explore-results";
 import { ExploreSearchField } from "@/components/marketplace/explore-search-field";
+import { getLocationTree } from "@/lib/location-queries";
 import { getPlatformSettings } from "@/lib/platform-settings";
 import { getExplorerFilters } from "@/lib/queries";
 import {
@@ -18,6 +20,7 @@ type SearchParams = Promise<{
   category?: string;
   plan?: string;
   sponsored?: string;
+  urgent?: string;
   sort?: string;
 }>;
 
@@ -38,10 +41,12 @@ export default async function ExploreMarketplacePage({ searchParams }: { searchP
   const plan = parsePlan(sp.plan);
   const sort = parseSort(sp.sort);
   const sponsoredOnly = sp.sponsored === "1";
+  const urgentOnly = sp.urgent === "1";
 
-  const [settings, { cities, categories, databaseAvailable }] = await Promise.all([
+  const [settings, { categories, databaseAvailable }, locationTree] = await Promise.all([
     getPlatformSettings(),
     getExplorerFilters(),
+    getLocationTree().catch(() => []),
   ]);
   const data = settings.maintenanceMode
     ? { ok: false as const, error: "Marketplace en maintenance temporaire." }
@@ -51,6 +56,7 @@ export default async function ExploreMarketplacePage({ searchParams }: { searchP
         category: sp.category,
         plan,
         sponsoredOnly,
+        urgentOnly,
         sort,
         page: 1,
       });
@@ -61,10 +67,11 @@ export default async function ExploreMarketplacePage({ searchParams }: { searchP
     ...(sp.category ? { category: sp.category } : {}),
     ...(plan !== "all" ? { plan } : {}),
     ...(sponsoredOnly ? { sponsored: "1" } : {}),
+    ...(urgentOnly ? { urgent: "1" } : {}),
     ...(sort !== "recent" ? { sort } : {}),
   };
 
-  const exploreStateKey = [sp.q ?? "", sp.city ?? "", sp.category ?? "", plan, sort, sponsoredOnly ? "1" : ""].join("|");
+  const exploreStateKey = [sp.q ?? "", sp.city ?? "", sp.category ?? "", plan, sort, sponsoredOnly ? "1" : "", urgentOnly ? "1" : ""].join("|");
 
   return (
     <div className="min-h-screen bg-[#050816] text-white">
@@ -113,90 +120,18 @@ export default async function ExploreMarketplacePage({ searchParams }: { searchP
             <div className="mb-3 hidden items-center gap-2 text-sm font-semibold text-cyan-200 lg:flex">
               <SlidersHorizontal className="h-4 w-4" /> Filtres marketplace
             </div>
-            <form method="GET" action="/explore" className="space-y-3">
-              <input type="hidden" name="q" value={sp.q ?? ""} />
-
-              <div>
-                <label className="mb-1 block text-xs font-medium text-white/55">Ville</label>
-                <select
-                  name="city"
-                  defaultValue={sp.city ?? ""}
-                  className="w-full rounded-xl border border-white/15 bg-white/[0.07] px-3 py-2 text-sm focus:border-cyan-400/40 focus:outline-none"
-                >
-                  <option value="">Toutes les villes</option>
-                  {cities.map((city) => (
-                    <option key={city.id} value={city.slug}>
-                      {city.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-medium text-white/55">Catégorie</label>
-                <select
-                  name="category"
-                  defaultValue={sp.category ?? ""}
-                  className="w-full rounded-xl border border-white/15 bg-white/[0.07] px-3 py-2 text-sm focus:border-cyan-400/40 focus:outline-none"
-                >
-                  <option value="">Toutes les catégories</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.slug}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-medium text-white/55">Abonnement</label>
-                <select
-                  name="plan"
-                  defaultValue={plan}
-                  className="w-full rounded-xl border border-white/15 bg-white/[0.07] px-3 py-2 text-sm focus:border-cyan-400/40 focus:outline-none"
-                >
-                  <option value="all">Tous les plans</option>
-                  <option value="free">Free</option>
-                  <option value="standard">Standard</option>
-                  <option value="premium">Premium</option>
-                  <option value="sponsored">Sponsoring actif</option>
-                </select>
-              </div>
-
-              <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm">
-                <input type="checkbox" name="sponsored" value="1" defaultChecked={sponsoredOnly} />
-                Uniquement sponsorisés (Bizapay)
-              </label>
-
-              <div>
-                <label className="mb-1 block text-xs font-medium text-white/55">Tri</label>
-                <select
-                  name="sort"
-                  defaultValue={sort}
-                  className="w-full rounded-xl border border-white/15 bg-white/[0.07] px-3 py-2 text-sm focus:border-cyan-400/40 focus:outline-none"
-                >
-                  <option value="recent">Plus récents</option>
-                  <option value="popular">Populaires</option>
-                  <option value="views">Plus vus</option>
-                  <option value="premium">Premium / mise en avant</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <button
-                  type="submit"
-                  className="rounded-xl bg-gradient-to-r from-violet-600 to-cyan-500 py-2.5 text-sm font-semibold text-black shadow-[0_0_24px_rgba(139,92,246,0.35)]"
-                >
-                  Appliquer
-                </button>
-                <Link
-                  href="/explore"
-                  className="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/5 py-2.5 text-sm text-white/85 hover:border-cyan-400/30"
-                >
-                  Réinit.
-                </Link>
-              </div>
-            </form>
+            <ExploreMarketplaceFiltersForm
+              key={exploreStateKey}
+              initialQ={sp.q ?? ""}
+              initialCitySlug={sp.city ?? ""}
+              initialCategorySlug={sp.category ?? ""}
+              plan={plan}
+              sort={sort}
+              sponsoredOnly={sponsoredOnly}
+              urgentOnly={urgentOnly}
+              categories={categories}
+              locationTree={locationTree}
+            />
 
             <p className="mt-4 flex items-start gap-2 text-xs text-white/45">
               <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-400/70" />
