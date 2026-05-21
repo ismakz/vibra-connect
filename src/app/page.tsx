@@ -1,7 +1,7 @@
 import { LandingPage } from "@/components/landing/landing-page";
 import { getAuthSession } from "@/lib/auth";
 import { getLandingData } from "@/lib/queries";
-import { getBusinessHref } from "@/lib/nav-user";
+import { EXPLORE_MARKET_HREF, getBusinessHref } from "@/lib/nav-user";
 
 export default async function Home() {
   const { categories, cities, featured, locationTree, databaseAvailable } = await getLandingData();
@@ -22,6 +22,7 @@ export default async function Home() {
         featured={featured}
         locationTree={locationTree}
         publishBusinessHref={publishBusinessHref}
+        exploreMarketHref={EXPLORE_MARKET_HREF}
       />
     </div>
   );

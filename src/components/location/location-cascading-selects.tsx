@@ -2,12 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { resolveCityAnchor, type LocationTreeCountry } from "@/lib/location-queries";
 import { selectForm } from "@/lib/select-classes";
-import type { LocationTreeCountry } from "@/lib/location-queries";
 
 type ValueMode = "slug" | "id";
 
-/** Statut chargement client quand `tree` est vide côté serveur (optionnel pour UI parente). */
 export type LocationTreeFetchStatus =
   | { phase: "loading" }
   | { phase: "ready"; countryCount: number }
@@ -15,23 +14,14 @@ export type LocationTreeFetchStatus =
 
 type Props = {
   tree?: LocationTreeCountry[];
-  /** Valeur courante : slug ville ou id ville selon `valueMode`. */
   value: string;
   onChange: (value: string) => void;
   valueMode?: ValueMode;
-  /** Champ caché pour formulaire HTML (ex. `city` ou `cityId`). */
   formFieldName?: string;
-  /** Si true, le champ caché est `required` (validation navigateur sur soumission). */
   formFieldRequired?: boolean;
-  /**
-   * Verrouillage total (ex. mode vitrine sans DB). Ne pas utiliser `true` uniquement parce que
-   * `tree` est vide au SSR : l’arbre peut être chargé via `/api/locations/tree` côté client.
-   */
   disabled?: boolean;
-  /** `stack` : labels + colonne. `inline` : 3 selects pour grille parente (Hero) — champ caché géré par le parent si besoin. */
   layout?: "stack" | "inline";
   selectClassName?: string;
-  /** Appelé quand l’arbre serveur est vide et qu’un fetch client démarre / réussit / échoue. */
   onClientTreeStatus?: (s: LocationTreeFetchStatus) => void;
 };
 
@@ -50,6 +40,7 @@ export function LocationCascadingSelects({
   const [fetchedTree, setFetchedTree] = useState<LocationTreeCountry[]>([]);
   const [pickerCountryId, setPickerCountryId] = useState("");
   const [pickerProvinceId, setPickerProvinceId] = useState("");
+  const [pickerTerritoryId, setPickerTerritoryId] = useState("");
 
   const serverTreeLen = treeProp?.length ?? 0;
   const countries = serverTreeLen > 0 ? (treeProp as LocationTreeCountry[]) : fetchedTree;
@@ -77,7 +68,6 @@ export function LocationCascadingSelects({
             typeof data?.error === "string" && data.error.length > 0
               ? data.error
               : `Erreur HTTP ${res.status}`;
-          console.warn("[VIBRA] /api/locations/tree failed:", msg);
           onClientTreeStatus?.({ phase: "error", message: msg });
           return;
         }
@@ -86,13 +76,11 @@ export function LocationCascadingSelects({
           setFetchedTree(list);
           onClientTreeStatus?.({ phase: "ready", countryCount: list.length });
         } else {
-          console.warn("[VIBRA] /api/locations/tree returned empty countries[]");
           onClientTreeStatus?.({ phase: "error", message: "Aucune localisation en base. Exécutez npm run prisma:seed." });
         }
       } catch (e) {
         if (cancelled) return;
         const msg = e instanceof Error ? e.message : "Erreur réseau";
-        console.warn("[VIBRA] /api/locations/tree", e);
         onClientTreeStatus?.({ phase: "error", message: msg });
       }
     })();
@@ -102,38 +90,49 @@ export function LocationCascadingSelects({
     };
   }, [serverTreeLen, onClientTreeStatus]);
 
-  let anchored: { countryId: string; provinceId: string } | null = null;
-  if (value && countries.length > 0) {
-    for (const c of countries) {
-      for (const p of c.provinces) {
-        const hit =
-          valueMode === "id"
-            ? p.cities.find((city) => city.id === value)
-            : p.cities.find((city) => city.slug === value);
-        if (hit) {
-          anchored = { countryId: c.id, provinceId: p.id };
-          break;
-        }
-      }
-      if (anchored) break;
-    }
-  }
+  const anchored = value && countries.length > 0 ? resolveCityAnchor(countries, value, valueMode) : null;
 
   const effectiveCountryId = anchored?.countryId ?? pickerCountryId;
   const effectiveProvinceId = anchored?.provinceId ?? pickerProvinceId;
-
-  const provinceDisabled = hardLock || noCountries || !effectiveCountryId;
-  const cityDisabled = hardLock || noCountries || !effectiveProvinceId;
+  const effectiveTerritoryId =
+    anchored?.territoryId !== undefined && anchored.territoryId !== ""
+      ? anchored.territoryId
+      : pickerTerritoryId;
 
   const provinces = useMemo(() => {
     if (!effectiveCountryId) return [];
     return countries.find((c) => c.id === effectiveCountryId)?.provinces ?? [];
   }, [countries, effectiveCountryId]);
 
-  const cities = useMemo(() => {
-    if (!effectiveProvinceId) return [];
-    return provinces.find((p) => p.id === effectiveProvinceId)?.cities ?? [];
+  const selectedProvince = useMemo(() => {
+    if (!effectiveProvinceId) return null;
+    return provinces.find((p) => p.id === effectiveProvinceId) ?? null;
   }, [provinces, effectiveProvinceId]);
+
+  const territories = useMemo(
+    () => selectedProvince?.territories ?? [],
+    [selectedProvince],
+  );
+  const directCities = useMemo(() => selectedProvince?.cities ?? [], [selectedProvince]);
+
+  const provinceHasTerritories = territories.length > 0;
+
+  const cities = useMemo(() => {
+    if (!selectedProvince) return [];
+    if (provinceHasTerritories) {
+      if (!effectiveTerritoryId) return [];
+      return territories.find((t) => t.id === effectiveTerritoryId)?.cities ?? [];
+    }
+    return directCities;
+  }, [selectedProvince, provinceHasTerritories, effectiveTerritoryId, territories, directCities]);
+
+  const provinceDisabled = hardLock || noCountries || !effectiveCountryId;
+  const territoryDisabled = hardLock || noCountries || !effectiveProvinceId || !provinceHasTerritories;
+  const cityDisabled =
+    hardLock ||
+    noCountries ||
+    !effectiveProvinceId ||
+    (provinceHasTerritories ? !effectiveTerritoryId : directCities.length === 0);
 
   const selectValue =
     valueMode === "id"
@@ -155,6 +154,7 @@ export function LocationCascadingSelects({
       onChange={(e) => {
         setPickerCountryId(e.target.value);
         setPickerProvinceId("");
+        setPickerTerritoryId("");
         onChange("");
       }}
     >
@@ -175,6 +175,7 @@ export function LocationCascadingSelects({
       aria-label="Province / Région"
       onChange={(e) => {
         setPickerProvinceId(e.target.value);
+        setPickerTerritoryId("");
         onChange("");
       }}
     >
@@ -187,15 +188,35 @@ export function LocationCascadingSelects({
     </select>
   );
 
+  const territorySelect = (
+    <select
+      className={selClass}
+      disabled={territoryDisabled}
+      value={provinceHasTerritories ? effectiveTerritoryId : ""}
+      aria-label="Territoire / Zone rurale"
+      onChange={(e) => {
+        setPickerTerritoryId(e.target.value);
+        onChange("");
+      }}
+    >
+      <option value="">Territoire / Zone rurale</option>
+      {territories.map((t) => (
+        <option key={t.id} value={t.id}>
+          {t.name}
+        </option>
+      ))}
+    </select>
+  );
+
   const citySelect = (
     <select
       className={selClass}
       disabled={cityDisabled}
       value={selectValue}
-      aria-label="Ville"
+      aria-label="Ville / Commune"
       onChange={(e) => onChange(e.target.value)}
     >
-      <option value="">Ville</option>
+      <option value="">Ville / Commune</option>
       {cities.map((c) => (
         <option key={c.id} value={valueMode === "id" ? c.id : c.slug}>
           {c.name}
@@ -209,6 +230,7 @@ export function LocationCascadingSelects({
       <div className="contents">
         {countrySelect}
         {provinceSelect}
+        {territorySelect}
         {citySelect}
       </div>
     );
@@ -228,7 +250,14 @@ export function LocationCascadingSelects({
         {provinceSelect}
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-white/55">Ville</label>
+        <label className="mb-1 block text-xs font-medium text-white/55">Territoire / Zone rurale</label>
+        {territorySelect}
+        {!provinceHasTerritories && effectiveProvinceId ? (
+          <p className="mt-1 text-[10px] text-white/45">Pas de territoire pour cette province — choisissez la ville.</p>
+        ) : null}
+      </div>
+      <div>
+        <label className="mb-1 block text-xs font-medium text-white/55">Ville / Commune</label>
         {citySelect}
       </div>
     </div>

@@ -59,7 +59,7 @@ export function LoginForm() {
     <main className="mx-auto flex min-h-screen max-w-md items-center px-4">
       <form action={onSubmit} className="glass w-full space-y-3 rounded-2xl p-6">
         <div className="flex items-center gap-3">
-          <Image src="/logo.svg" alt="" width={40} height={40} className="h-10 w-10 shrink-0 rounded-lg" />
+          <Image src="/logo.png" alt="VIBRA CONNECT" width={48} height={48} className="h-12 w-12 shrink-0 rounded-full object-contain" />
           <h1 className="text-xl font-bold">Connexion</h1>
         </div>
         <input

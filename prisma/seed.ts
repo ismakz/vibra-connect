@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 
 import { DEFAULT_CATEGORY_NAMES } from "../src/lib/category-catalog";
 import { slugify } from "../src/lib/slug";
-import { LOCATION_TREE_DATA } from "./location-tree-data";
+import { LOCATION_TREE_DATA, type SeedProvince } from "./location-tree-data";
 
 const prisma = new PrismaClient();
 
@@ -13,6 +13,14 @@ const CEO_PASSWORD_DEV = "Admin@2026";
 const CEO_NAME = "Bizaflow CEO";
 
 const categories = [...DEFAULT_CATEGORY_NAMES];
+
+function normalizeProvinceTerritories(p: SeedProvince) {
+  if (p.territories && p.territories.length > 0) return p.territories;
+  if (p.cities && p.cities.length > 0) {
+    return [{ name: "Localités", slug: `${p.slug}-local`, cities: p.cities }];
+  }
+  return [];
+}
 
 async function syncLocationHierarchy() {
   for (const c of LOCATION_TREE_DATA) {
@@ -29,12 +37,33 @@ async function syncLocationHierarchy() {
         create: { countryId: country.id, name: p.name, slug: p.slug },
       });
 
-      for (const city of p.cities) {
-        await prisma.city.upsert({
-          where: { slug: city.slug },
-          update: { name: city.name, provinceId: province.id, isActive: true },
-          create: { name: city.name, slug: city.slug, provinceId: province.id, isActive: true },
+      const territories = normalizeProvinceTerritories(p);
+
+      for (const t of territories) {
+        const territory = await prisma.territory.upsert({
+          where: { provinceId_slug: { provinceId: province.id, slug: t.slug } },
+          update: { name: t.name, isActive: true },
+          create: { provinceId: province.id, name: t.name, slug: t.slug, isActive: true },
         });
+
+        for (const city of t.cities) {
+          await prisma.city.upsert({
+            where: { slug: city.slug },
+            update: {
+              name: city.name,
+              provinceId: province.id,
+              territoryId: territory.id,
+              isActive: true,
+            },
+            create: {
+              name: city.name,
+              slug: city.slug,
+              provinceId: province.id,
+              territoryId: territory.id,
+              isActive: true,
+            },
+          });
+        }
       }
     }
   }
@@ -46,9 +75,18 @@ async function syncLocationHierarchy() {
       update: {},
       create: { countryId: rdc.id, name: "Autres (migration)", slug: "hors-liste" },
     });
+    const legacyTerritory = await prisma.territory.upsert({
+      where: { provinceId_slug: { provinceId: legacy.id, slug: "hors-liste" } },
+      update: { isActive: true },
+      create: { provinceId: legacy.id, name: "Hors liste", slug: "hors-liste", isActive: true },
+    });
     await prisma.city.updateMany({
       where: { provinceId: null },
-      data: { provinceId: legacy.id },
+      data: { provinceId: legacy.id, territoryId: legacyTerritory.id },
+    });
+    await prisma.city.updateMany({
+      where: { provinceId: legacy.id, territoryId: null },
+      data: { territoryId: legacyTerritory.id },
     });
   }
 }

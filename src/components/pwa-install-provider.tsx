@@ -94,7 +94,7 @@ export function PwaInstallProvider() {
       className="fixed inset-x-0 bottom-0 z-[45] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2"
     >
       <div className="mx-auto flex max-w-lg items-center gap-3 rounded-2xl border border-cyan-500/25 bg-[#0a1024]/95 px-3 py-2.5 shadow-[0_-8px_40px_rgba(0,0,0,0.45)] backdrop-blur-xl">
-        <Image src="/logo.svg" alt="" width={40} height={40} className="h-10 w-10 shrink-0 rounded-xl" />
+        <Image src="/logo.png" alt="VIBRA CONNECT" width={40} height={40} className="h-10 w-10 shrink-0 rounded-full object-contain" />
         <div className="min-w-0 flex-1">
           <p className="text-xs font-bold uppercase tracking-wide text-cyan-200/90">Application</p>
           <p className="truncate text-sm font-semibold text-white">Installer VIBRA CONNECT</p>

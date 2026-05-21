@@ -7,6 +7,7 @@ import {
   type LocationTreeFetchStatus,
 } from "@/components/location/location-cascading-selects";
 import type { LocationTreeCountry } from "@/lib/location-queries";
+import { EXPLORE_MARKET_HREF } from "@/lib/nav-user";
 import { selectHeroInline } from "@/lib/select-classes";
 
 /** Hauteur commune champs + bouton (56px, min 52px) */
@@ -33,7 +34,7 @@ export function LandingHeroSearch({ locationTree }: { locationTree: LocationTree
   }, [locationTree.length, clientStatus]);
 
   return (
-    <form action="/explore" method="get" className="w-full">
+    <form action={EXPLORE_MARKET_HREF} method="get" className="w-full">
       <input type="hidden" name="city" value={citySlug} readOnly />
       {displayStatus.phase === "loading" ? (
         <p className="mb-1.5 text-xs text-white/50" aria-live="polite">
@@ -49,7 +50,7 @@ export function LandingHeroSearch({ locationTree }: { locationTree: LocationTree
         role="search"
         className="rounded-xl border border-white/10 bg-white/[0.035] p-1.5 shadow-[0_4px_24px_rgba(0,0,0,0.28)] backdrop-blur-md ring-1 ring-white/[0.04] sm:p-2"
       >
-        <div className="grid grid-cols-1 gap-1.5 sm:gap-2 lg:grid-cols-[minmax(0,1.2fr)_repeat(3,minmax(0,0.78fr))_auto] lg:items-center">
+        <div className="grid grid-cols-1 gap-1.5 sm:gap-2 lg:grid-cols-[minmax(0,1.1fr)_repeat(4,minmax(0,0.65fr))_auto] lg:items-center">
           <input
             type="search"
             name="q"

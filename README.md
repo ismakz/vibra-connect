@@ -109,5 +109,5 @@ Sinon : message *« Upload image non configuré, utilisez une URL »* et champs 
 1. ✅ Configuration documentée (ce README + `.env.example`)
 2. ✅ Migrations + seed base (baseline + seed — voir ci-dessus)
 3. ✅ Versionner le code (`54cf8c1` sur `origin/main`)
-4. Tests manuels des parcours critiques
+4. Tests manuels — voir [`docs/MANUAL-TEST-CHECKLIST.md`](docs/MANUAL-TEST-CHECKLIST.md)
 5. … (promotions, avis, notifications, etc.)

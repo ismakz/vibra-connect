@@ -18,7 +18,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { UserAvatar } from "@/components/user-avatar";
 import { isPlatformCeoRole } from "@/lib/ceo-platform";
-import { dashboardHrefForRole, navRoleBadge } from "@/lib/nav-user";
+import { dashboardHrefForRole, EXPLORE_MARKET_HREF, navRoleBadge } from "@/lib/nav-user";
 
 export type TopNavUser = {
   id: string;
@@ -116,13 +116,13 @@ export function TopNavClient({
 
   const coreLinks: Array<{ href: string; label: string }> = [
     { href: "/", label: "Accueil" },
-    { href: "/explore", label: "Marketplace" },
+    { href: EXPLORE_MARKET_HREF, label: "Marketplace" },
     { href: businessHref, label: "Business" },
   ];
   if (navUser?.role === "AGENT") {
     coreLinks.push({ href: "/agent", label: "Agents" });
   }
-  coreLinks.push({ href: "/pricing", label: "Tarifs" });
+  coreLinks.push({ href: "/tarifs", label: "Tarifs" });
 
   const links = [...ceoLink, ...coreLinks];
 
@@ -136,12 +136,12 @@ export function TopNavClient({
         <Link href="/" className="flex min-w-0 flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-2">
           <span className="flex items-center gap-2">
             <Image
-              src="/logo.svg"
-              alt=""
-              width={36}
-              height={36}
+              src="/logo.png"
+              alt="VIBRA CONNECT"
+              width={40}
+              height={40}
               priority
-              className="h-9 w-9 shrink-0 rounded-lg"
+              className="h-10 w-10 shrink-0 rounded-full object-contain"
             />
             <span className="truncate text-sm font-bold tracking-[0.18em] text-white">VIBRA CONNECT</span>
           </span>

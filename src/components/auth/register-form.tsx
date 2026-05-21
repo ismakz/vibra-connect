@@ -100,7 +100,7 @@ export function RegisterForm({
   return (
     <div className="glass rounded-2xl border border-white/10 p-6 shadow-[0_20px_60px_rgba(37,99,235,0.12)]">
       <div className="flex items-start gap-3">
-        <Image src="/logo.svg" alt="" width={44} height={44} className="mt-0.5 h-11 w-11 shrink-0 rounded-xl" />
+        <Image src="/logo.png" alt="VIBRA CONNECT" width={48} height={48} className="mt-0.5 h-12 w-12 shrink-0 rounded-full object-contain" />
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-300/90">Bizaflow · VIBRA CONNECT</p>
           <h1 className="mt-2 text-2xl font-black tracking-tight">Créer un compte</h1>

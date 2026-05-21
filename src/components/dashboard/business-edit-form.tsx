@@ -15,10 +15,14 @@ type Option = { id: string; name: string };
 
 function cityNameFromTree(tree: LocationTreeCountry[], cityId: string): string | undefined {
   if (!cityId) return undefined;
-  for (const c of tree) {
-    for (const p of c.provinces) {
-      const city = p.cities.find((x) => x.id === cityId);
-      if (city) return city.name;
+  for (const country of tree) {
+    for (const province of country.provinces) {
+      for (const territory of province.territories) {
+        const city = territory.cities.find((x) => x.id === cityId);
+        if (city) return city.name;
+      }
+      const direct = province.cities.find((x) => x.id === cityId);
+      if (direct) return direct.name;
     }
   }
   return undefined;

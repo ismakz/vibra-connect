@@ -1,5 +1,5 @@
 /**
- * Génère les PNG PWA + favicon.ico à partir de public/logo.svg
+ * Génère les PNG PWA + favicon.ico à partir de public/logo.png (logo officiel)
  * Exécution : npm run pwa:icons
  */
 import fs from "node:fs";
@@ -10,16 +10,21 @@ import pngToIco from "png-to-ico";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, "..");
-const svgPath = path.join(root, "public", "logo.svg");
+const logoPath = path.join(root, "public", "logo.png");
 
 async function main() {
-  const svg = fs.readFileSync(svgPath);
+  if (!fs.existsSync(logoPath)) {
+    console.error("Fichier manquant : public/logo.png");
+    process.exit(1);
+  }
 
-  const png192 = await sharp(svg).resize(192, 192).png().toBuffer();
-  const png512 = await sharp(svg).resize(512, 512).png().toBuffer();
-  const apple = await sharp(svg).resize(180, 180).png().toBuffer();
-  const png32 = await sharp(svg).resize(32, 32).png().toBuffer();
-  const png16 = await sharp(svg).resize(16, 16).png().toBuffer();
+  const input = sharp(logoPath);
+
+  const png192 = await input.clone().resize(192, 192, { fit: "contain", background: { r: 5, g: 8, b: 22, alpha: 1 } }).png().toBuffer();
+  const png512 = await input.clone().resize(512, 512, { fit: "contain", background: { r: 5, g: 8, b: 22, alpha: 1 } }).png().toBuffer();
+  const apple = await input.clone().resize(180, 180, { fit: "contain", background: { r: 5, g: 8, b: 22, alpha: 1 } }).png().toBuffer();
+  const png32 = await input.clone().resize(32, 32, { fit: "contain", background: { r: 5, g: 8, b: 22, alpha: 1 } }).png().toBuffer();
+  const png16 = await input.clone().resize(16, 16, { fit: "contain", background: { r: 5, g: 8, b: 22, alpha: 1 } }).png().toBuffer();
 
   fs.writeFileSync(path.join(root, "public", "icon-192.png"), png192);
   fs.writeFileSync(path.join(root, "public", "icon-512.png"), png512);

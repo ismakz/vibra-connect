@@ -3,9 +3,10 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 try {
-  const [countries, provinces, cities, categories, settings, ceo] = await Promise.all([
+  const [countries, provinces, territories, cities, categories, settings, ceo] = await Promise.all([
     prisma.country.count(),
     prisma.province.count(),
+    prisma.territory.count(),
     prisma.city.count(),
     prisma.category.count(),
     prisma.platformSettings.findUnique({ where: { singletonKey: "MARKETPLACE" }, select: { isActive: true } }),
@@ -21,6 +22,7 @@ try {
         ok: Boolean(ceo && settings),
         countries,
         provinces,
+        territories,
         cities,
         categories,
         platformSettingsActive: settings?.isActive ?? false,

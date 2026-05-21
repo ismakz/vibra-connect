@@ -20,6 +20,7 @@ import {
 import { LandingHeroSearch } from "@/components/landing/landing-hero-search";
 import { CATEGORY_ICON_BY_SLUG } from "@/lib/category-catalog";
 import type { LocationTreeCountry } from "@/lib/location-queries";
+import { EXPLORE_MARKET_HREF } from "@/lib/nav-user";
 import { slugify } from "@/lib/slug";
 
 type Category = { id: string; name: string; slug: string };
@@ -56,12 +57,14 @@ export function LandingPage({
   featured,
   locationTree,
   publishBusinessHref,
+  exploreMarketHref = EXPLORE_MARKET_HREF,
 }: {
   categories: Category[];
   cities: City[];
   featured: Featured[];
   locationTree: LocationTreeCountry[];
   publishBusinessHref: string;
+  exploreMarketHref?: string;
 }) {
   const [showAllCategories, setShowAllCategories] = useState(false);
   const hasManyCategories = categories.length > 12;
@@ -216,14 +219,14 @@ export function LandingPage({
                 Publier mon business
               </Link>
               <Link
-                href="/explore"
+                href={exploreMarketHref}
                 className="inline-flex h-11 w-full items-center justify-center rounded-full border border-white/18 bg-white/[0.06] px-5 text-sm font-medium text-white/90 backdrop-blur-sm transition hover:border-cyan-300/35 hover:bg-white/[0.1] hover:text-white sm:w-auto sm:min-w-[10rem]"
               >
                 Explorer le marché
               </Link>
             </div>
             <Link
-              href="/explore?urgent=1"
+              href={`${exploreMarketHref}?urgent=1`}
               className="mt-3 inline-flex items-center gap-2 rounded-full border border-orange-400/35 bg-gradient-to-r from-orange-500/20 to-rose-500/15 px-4 py-2 text-xs font-semibold text-orange-100 shadow-[0_0_20px_rgba(249,115,22,0.15)] transition hover:border-orange-300/50 hover:from-orange-500/30 hover:to-rose-500/25"
             >
               Ventes en urgence — offres flash sur la marketplace

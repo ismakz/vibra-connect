@@ -151,23 +151,41 @@ model Country {
 }
 
 model Province {
-  id        String   @id @default(cuid())
-  countryId String
-  name      String
-  slug      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  country   Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
-  cities    City[]
+  id          String      @id @default(cuid())
+  countryId   String
+  name        String
+  slug        String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  country     Country     @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  territories Territory[]
+  cities      City[]
 
   @@unique([countryId, slug])
   @@index([countryId])
 }
 
+model Territory {
+  id         String   @id @default(cuid())
+  provinceId String
+  name       String
+  slug       String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  province   Province @relation(fields: [provinceId], references: [id], onDelete: Cascade)
+  cities     City[]
+
+  @@unique([provinceId, slug])
+  @@index([provinceId])
+}
+
 model City {
   id         String     @id @default(cuid())
   provinceId String?
+  territoryId String?
   province   Province?  @relation(fields: [provinceId], references: [id], onDelete: Restrict)
+  territory  Territory? @relation(fields: [territoryId], references: [id], onDelete: Restrict)
   name       String
   slug       String     @unique
   isActive   Boolean    @default(true)
@@ -180,6 +198,7 @@ model City {
   integrationStatus IntegrationStatus @default(NOT_LINKED)
 
   @@index([provinceId])
+  @@index([territoryId])
 }
 
 model Category {
