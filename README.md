@@ -108,6 +108,6 @@ Sinon : message *« Upload image non configuré, utilisez une URL »* et champs 
 
 1. ✅ Configuration documentée (ce README + `.env.example`)
 2. ✅ Migrations + seed base (baseline + seed — voir ci-dessus)
-3. Versionner le code (commit / push)
+3. ✅ Versionner le code (`54cf8c1` sur `origin/main`)
 4. Tests manuels des parcours critiques
 5. … (promotions, avis, notifications, etc.)
