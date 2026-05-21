@@ -15,7 +15,8 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:baseline:location": "prisma migrate resolve --applied 20260514120000_location_hierarchy",
     "prisma:verify-seed": "node scripts/verify-db-seed.mjs",
-    "prisma:sync": "prisma generate && prisma db push && prisma db seed"
+    "prisma:sync": "prisma generate && prisma db push && prisma db seed",
+    "locations:build": "node scripts/build-rdc-locations.mjs && node scripts/generate-world-locations.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

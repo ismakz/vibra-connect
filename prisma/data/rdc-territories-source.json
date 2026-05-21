@@ -1,0 +1,365 @@
+[
+  {
+    "name": "Kinshasa",
+    "slug": "kinshasa",
+    "territories": [
+      { "name": "Bandalungwa", "slug": "bandalungwa", "cities": ["Bandalungwa"] },
+      { "name": "Barumbu", "slug": "barumbu", "cities": ["Barumbu"] },
+      { "name": "Gombe", "slug": "gombe-commune", "cities": ["Gombe"] },
+      { "name": "Kalamu", "slug": "kalamu-commune", "cities": ["Kalamu"] },
+      { "name": "Kasa-Vubu", "slug": "kasa-vubu", "cities": ["Kasa-Vubu"] },
+      { "name": "Kimbanseke", "slug": "kimbanseke-commune", "cities": ["Kimbanseke"] },
+      { "name": "Kinshasa", "slug": "kinshasa-commune", "cities": ["Kinshasa"] },
+      { "name": "Kintambo", "slug": "kintambo-commune", "cities": ["Kintambo"] },
+      { "name": "Kisenso", "slug": "kisenso", "cities": ["Kisenso"] },
+      { "name": "Lemba", "slug": "lemba", "cities": ["Lemba"] },
+      { "name": "Limete", "slug": "limete-commune", "cities": ["Limete"] },
+      { "name": "Lingwala", "slug": "lingwala", "cities": ["Lingwala"] },
+      { "name": "Makala", "slug": "makala", "cities": ["Makala"] },
+      { "name": "Maluku", "slug": "maluku", "cities": ["Maluku"] },
+      { "name": "Masina", "slug": "masina-commune", "cities": ["Masina"] },
+      { "name": "Matete", "slug": "matete-commune", "cities": ["Matete"] },
+      { "name": "Mont-Ngafula", "slug": "mont-ngafula", "cities": ["Mont-Ngafula"] },
+      { "name": "N'djili", "slug": "ndjili-commune", "cities": ["N'djili"] },
+      { "name": "Ngaba", "slug": "ngaba", "cities": ["Ngaba"] },
+      { "name": "Ngaliema", "slug": "ngaliema-commune", "cities": ["Ngaliema"] },
+      { "name": "Ngiri-Ngiri", "slug": "ngiri-ngiri", "cities": ["Ngiri-Ngiri"] },
+      { "name": "Nsele", "slug": "nsele-commune", "cities": ["Nsele"] },
+      { "name": "Selembao", "slug": "selembao", "cities": ["Selembao"] }
+    ]
+  },
+  {
+    "name": "Nord-Kivu",
+    "slug": "nord-kivu",
+    "territories": [
+      {
+        "name": "Nyiragongo",
+        "slug": "nyiragongo",
+        "cities": ["Goma", "Sake", "Karisimbi", "Murara"]
+      },
+      {
+        "name": "Rutshuru",
+        "slug": "rutshuru",
+        "cities": ["Rutshuru", "Kiwanja", "Bwito", "Kalengera", "Busanza", "Jomba"]
+      },
+      {
+        "name": "Masisi",
+        "slug": "masisi",
+        "cities": [
+          "Masisi",
+          "Rubaya",
+          "Mweso",
+          "Mushaki",
+          "Kashuga",
+          "Karuba",
+          "Kalembe",
+          "Ngungu",
+          "Nyabiondo",
+          "Kitshanga",
+          "Bihambwe",
+          "Bushagara",
+          "Katoyi",
+          "Lushebere",
+          "Osso"
+        ]
+      },
+      {
+        "name": "Walikale",
+        "slug": "walikale",
+        "cities": ["Walikale", "Kisangani-Walikale", "Itebero", "Kibua", "Masisi-Walikale", "Tongo"]
+      },
+      {
+        "name": "Lubero",
+        "slug": "lubero",
+        "cities": ["Lubero", "Kayna", "Mbwavulu", "Kamandi", "Luofu", "Mangurujipa", "Kashebere"]
+      },
+      {
+        "name": "Beni",
+        "slug": "beni-territoire",
+        "cities": ["Beni", "Butembo", "Oicha", "Mavivi", "Kyondo", "Mutwanga", "Watalinga"]
+      }
+    ]
+  },
+  {
+    "name": "Sud-Kivu",
+    "slug": "sud-kivu",
+    "territories": [
+      { "name": "Kabare", "slug": "kabare", "cities": ["Kavumu", "Kabare", "Chihamba", "Mubavu"] },
+      { "name": "Walungu", "slug": "walungu", "cities": ["Bukavu", "Walungu", "Ngweshe", "Burhale", "Irego"] },
+      { "name": "Kalehe", "slug": "kalehe", "cities": ["Kalehe", "Minova", "Buhavu", "Bukavu-Kalehe", "Kirotshe"] },
+      { "name": "Uvira", "slug": "uvira-territoire", "cities": ["Uvira", "Sange", "Luvungi", "Kavimvira", "Luberizi"] },
+      { "name": "Fizi", "slug": "fizi", "cities": ["Baraka", "Fizi", "Makobola", "Swima", "Kimbi-Lulenge"] },
+      { "name": "Mwenga", "slug": "mwenga", "cities": ["Kamituga", "Mwenga", "Tchivanga", "Kigulube"] },
+      { "name": "Shabunda", "slug": "shabunda", "cities": ["Shabunda", "Kigulube-Shabunda", "Lulingu", "Matili"] },
+      { "name": "Idjwi", "slug": "idjwi", "cities": ["Idjwi", "Minova-Idjwi", "Luvungi-Idjwi", "Bugarula"] }
+    ]
+  },
+  {
+    "name": "Ituri",
+    "slug": "ituri",
+    "territories": [
+      { "name": "Irumu", "slug": "irumu", "cities": ["Bunia", "Gety", "Rukoro", "Linga"] },
+      { "name": "Djugu", "slug": "djugu", "cities": ["Djugu", "Drodro", "Bahema", "Tchomia"] },
+      { "name": "Mahagi", "slug": "mahagi-territoire", "cities": ["Mahagi", "Rethy", "Nyarambe", "Jina"] },
+      { "name": "Aru", "slug": "aru-territoire", "cities": ["Aru", "Ariwara", "Onga", "Linga-Aru"] },
+      { "name": "Mambasa", "slug": "mambasa-territoire", "cities": ["Mambasa", "Wamba-Mambasa", "Bafwasende-Mambasa", "Walese Vonkutu"] }
+    ]
+  },
+  {
+    "name": "Haut-Katanga",
+    "slug": "haut-katanga",
+    "territories": [
+      { "name": "Lubumbashi", "slug": "lubumbashi-territoire", "cities": ["Lubumbashi", "Kampemba", "Kenya", "Kamalondo"] },
+      { "name": "Likasi", "slug": "likasi-territoire", "cities": ["Likasi", "Kikula", "Panda"] },
+      { "name": "Kipushi", "slug": "kipushi", "cities": ["Kipushi", "Kasolo", "Kipushi-Mine"] },
+      { "name": "Kambove", "slug": "kambove", "cities": ["Kambove", "Kabolela", "Kipushi-Kambove"] },
+      { "name": "Kasenga", "slug": "kasenga", "cities": ["Kasenga", "Kasomeno", "Mokambo"] },
+      { "name": "Mitwaba", "slug": "mitwaba", "cities": ["Mitwaba", "Kisanga", "Manika"] },
+      { "name": "Pweto", "slug": "pweto", "cities": ["Pweto", "Kasenga-Pweto", "Moero"] },
+      { "name": "Sakania", "slug": "sakania", "cities": ["Kasumbalesa", "Sakania", "Mokambo-Sakania"] }
+    ]
+  },
+  {
+    "name": "Lualaba",
+    "slug": "lualaba",
+    "territories": [
+      { "name": "Kolwezi", "slug": "kolwezi-territoire", "cities": ["Kolwezi", "Manika-Kolwezi", "Dilala"] },
+      { "name": "Mutshatsha", "slug": "mutshatsha", "cities": ["Mutshatsha", "Kasaji", "Lubudi-Mutshatsha"] },
+      { "name": "Lubudi", "slug": "lubudi", "cities": ["Lubudi", "Bakwanga", "Kamina-Lubudi"] },
+      { "name": "Dilolo", "slug": "dilolo-territoire", "cities": ["Dilolo", "Sandoa-Dilolo", "Kapanga-Dilolo"] },
+      { "name": "Kapanga", "slug": "kapanga", "cities": ["Kapanga", "Kamina-Kapanga"] },
+      { "name": "Sandoa", "slug": "sandoa", "cities": ["Sandoa", "Kasaji-Sandoa"] },
+      { "name": "Fungurume", "slug": "fungurume-territoire", "cities": ["Fungurume", "Tenke", "Kakanda", "Kambove-Fungurume"] }
+    ]
+  },
+  {
+    "name": "Tshopo",
+    "slug": "tshopo",
+    "territories": [
+      { "name": "Kisangani", "slug": "kisangani-territoire", "cities": ["Kisangani", "Makiso", "Tshopo", "Mangobo"] },
+      { "name": "Banalia", "slug": "banalia", "cities": ["Banalia", "Yakoma-Banalia"] },
+      { "name": "Bafwasende", "slug": "bafwasende", "cities": ["Bafwasende", "Yanonge"] },
+      { "name": "Basoko", "slug": "basoko", "cities": ["Basoko", "Isangi-Basoko"] },
+      { "name": "Isangi", "slug": "isangi", "cities": ["Isangi", "Yahuma"] },
+      { "name": "Opala", "slug": "opala", "cities": ["Opala", "Yawenda"] },
+      { "name": "Ubundu", "slug": "ubundu", "cities": ["Ubundu", "Bafwasende-Ubundu"] },
+      { "name": "Yakoma", "slug": "yakoma", "cities": ["Yakoma", "Bondo-Yakoma"] }
+    ]
+  },
+  {
+    "name": "Kongo Central",
+    "slug": "kongo-central",
+    "territories": [
+      { "name": "Matadi", "slug": "matadi-territoire", "cities": ["Matadi", "Mvuzi", "Nzanza"] },
+      { "name": "Boma", "slug": "boma-territoire", "cities": ["Boma", "Kalamu-Boma", "Nzadi"] },
+      { "name": "Moanda", "slug": "moanda", "cities": ["Moanda", "Banana", "Kinkanda"] },
+      { "name": "Lukula", "slug": "lukula", "cities": ["Lukula", "Tshela-Lukula"] },
+      { "name": "Tshela", "slug": "tshela", "cities": ["Tshela", "Kasangulu"] },
+      { "name": "Songololo", "slug": "songololo", "cities": ["Songololo", "Kinzono"] },
+      { "name": "Mbanza-Ngungu", "slug": "mbanza-ngungu", "cities": ["Mbanza-Ngungu", "Kisantu", "Kimbangu"] },
+      { "name": "Kimpese", "slug": "kimpese", "cities": ["Kimpese", "Nzeto", "Lufu"] }
+    ]
+  },
+  {
+    "name": "Tanganyika",
+    "slug": "tanganyika",
+    "territories": [
+      { "name": "Kalemie", "slug": "kalemie-territoire", "cities": ["Kalemie", "Albertville", "Nyemba"] },
+      { "name": "Kongolo", "slug": "kongolo", "cities": ["Kongolo", "Kabambare-Kongolo"] },
+      { "name": "Manono", "slug": "manono", "cities": ["Manono", "Kiambi"] },
+      { "name": "Moba", "slug": "moba", "cities": ["Moba", "Kirungu", "Kalemie-Moba"] },
+      { "name": "Nyunzu", "slug": "nyunzu", "cities": ["Nyunzu", "Kabalo-Nyunzu"] },
+      { "name": "Ankoro", "slug": "ankoro", "cities": ["Ankoro", "Kasongo-Ankoro"] },
+      { "name": "Kabalo", "slug": "kabalo-tanganyika", "cities": ["Kabalo", "Kamina-Kabalo"] }
+    ]
+  },
+  {
+    "name": "Maniema",
+    "slug": "maniema",
+    "territories": [
+      { "name": "Kindu", "slug": "kindu-territoire", "cities": ["Kindu", "Mikelenge", "Alunguli"] },
+      { "name": "Kasongo", "slug": "kasongo-territoire", "cities": ["Kasongo", "Samba", "Kailo-Kasongo"] },
+      { "name": "Kabambare", "slug": "kabambare", "cities": ["Kabambare", "Kibombo-Kabambare"] },
+      { "name": "Kailo", "slug": "kailo", "cities": ["Kailo", "Pangi-Kailo"] },
+      { "name": "Kibombo", "slug": "kibombo", "cities": ["Kibombo", "Lubutu"] },
+      { "name": "Pangi", "slug": "pangi", "cities": ["Pangi", "Lusanga", "Kasongo-Pangi"] }
+    ]
+  },
+  {
+    "name": "Kasaï",
+    "slug": "kasai",
+    "territories": [
+      { "name": "Tshikapa", "slug": "tshikapa-territoire", "cities": ["Tshikapa", "Dibaya-Tshikapa"] },
+      { "name": "Ilebo", "slug": "ilebo-territoire", "cities": ["Ilebo", "Luebo-Ilebo"] },
+      { "name": "Luebo", "slug": "luebo", "cities": ["Luebo", "Bakuba"] },
+      { "name": "Mweka", "slug": "mweka-kasai", "cities": ["Mweka", "Dekese-Mweka"] },
+      { "name": "Dekese", "slug": "dekese", "cities": ["Dekese", "Kamonia-Dekese"] },
+      { "name": "Kamonia", "slug": "kamonia", "cities": ["Kamonia", "Kazumba-Kamonia"] }
+    ]
+  },
+  {
+    "name": "Kasaï-Central",
+    "slug": "kasai-central",
+    "territories": [
+      { "name": "Kananga", "slug": "kananga-territoire", "cities": ["Kananga", "Ndesha", "Lukonga"] },
+      { "name": "Dimbelenge", "slug": "dimbelenge-territoire", "cities": ["Dimbelenge", "Bena Leka", "Bakwa"] },
+      { "name": "Demba", "slug": "demba", "cities": ["Demba", "Dibaya-Demba"] },
+      { "name": "Dibaya", "slug": "dibaya-kasai-central", "cities": ["Dibaya", "Katoka"] },
+      { "name": "Kazumba", "slug": "kazumba", "cities": ["Kazumba", "Luiza-Kazumba"] },
+      { "name": "Luiza", "slug": "luiza", "cities": ["Luiza", "Bena Kanda"] }
+    ]
+  },
+  {
+    "name": "Kasaï-Oriental",
+    "slug": "kasai-oriental",
+    "territories": [
+      { "name": "Mbuji-Mayi", "slug": "mbuji-mayi-territoire", "cities": ["Mbuji-Mayi", "Bipemba", "Diulu"] },
+      { "name": "Kabinda", "slug": "kabinda-kasai-oriental", "cities": ["Kabinda", "Tshilenge"] },
+      { "name": "Katanda", "slug": "katanda", "cities": ["Katanda", "Lupatapata-Katanda"] },
+      { "name": "Lupatapata", "slug": "lupatapata", "cities": ["Lupatapata", "Miabi-Lupatapata"] },
+      { "name": "Miabi", "slug": "miabi", "cities": ["Miabi", "Tshilenge-Miabi"] }
+    ]
+  },
+  {
+    "name": "Équateur",
+    "slug": "equateur",
+    "territories": [
+      { "name": "Mbandaka", "slug": "mbandaka-territoire", "cities": ["Mbandaka", "Wangata", "Makanza-Mbandaka"] },
+      { "name": "Lukolela", "slug": "lukolela-territoire", "cities": ["Lukolela", "Bomongo-Lukolela"] },
+      { "name": "Bomongo", "slug": "bomongo", "cities": ["Bomongo", "Ingende-Bomongo"] },
+      { "name": "Ingende", "slug": "ingende", "cities": ["Ingende", "Bikoro-Ingende"] },
+      { "name": "Bikoro", "slug": "bikoro", "cities": ["Bikoro", "Bolomba-Bikoro"] },
+      { "name": "Bolomba", "slug": "bolomba", "cities": ["Bolomba", "Makanza-Bolomba"] },
+      { "name": "Makanza", "slug": "makanza", "cities": ["Makanza", "Mushie-Makanza"] },
+      { "name": "Mushie", "slug": "mushie", "cities": ["Mushie", "Bokungu"] }
+    ]
+  },
+  {
+    "name": "Nord-Ubangi",
+    "slug": "nord-ubangi",
+    "territories": [
+      { "name": "Gbadolite", "slug": "gbadolite-territoire", "cities": ["Gbadolite", "Mongwandi"] },
+      { "name": "Bosobolo", "slug": "bosobolo-territoire", "cities": ["Bosobolo", "Yakoma-Bosobolo"] },
+      { "name": "Businga", "slug": "businga", "cities": ["Businga", "Mobayi-Mbongo-Businga"] },
+      { "name": "Mobayi-Mbongo", "slug": "mobayi-mbongo", "cities": ["Mobayi-Mbongo", "Karawa"] }
+    ]
+  },
+  {
+    "name": "Sud-Ubangi",
+    "slug": "sud-ubangi",
+    "territories": [
+      { "name": "Gemena", "slug": "gemena-territoire", "cities": ["Gemena", "Libenge-Gemena"] },
+      { "name": "Budjala", "slug": "budjala-territoire", "cities": ["Budjala", "Kungu-Budjala"] },
+      { "name": "Kungu", "slug": "kungu", "cities": ["Kungu", "Bomongo-Kungu"] },
+      { "name": "Libenge", "slug": "libenge", "cities": ["Libenge", "Budjala-Libenge"] }
+    ]
+  },
+  {
+    "name": "Mongala",
+    "slug": "mongala",
+    "territories": [
+      { "name": "Lisala", "slug": "lisala-territoire", "cities": ["Lisala", "Bongandanga-Lisala"] },
+      { "name": "Bumba", "slug": "bumba-territoire", "cities": ["Bumba", "Yakoma-Bumba"] },
+      { "name": "Bongandanga", "slug": "bongandanga", "cities": ["Bongandanga", "Basankusu"] }
+    ]
+  },
+  {
+    "name": "Tshuapa",
+    "slug": "tshuapa",
+    "territories": [
+      { "name": "Boende", "slug": "boende-territoire", "cities": ["Boende", "Befale-Boende"] },
+      { "name": "Befale", "slug": "befale", "cities": ["Befale", "Djolu-Befale"] },
+      { "name": "Djolu", "slug": "djolu", "cities": ["Djolu", "Ikela-Djolu"] },
+      { "name": "Ikela", "slug": "ikela", "cities": ["Ikela", "Monkoto-Ikela"] },
+      { "name": "Monkoto", "slug": "monkoto", "cities": ["Monkoto", "Boende-Monkoto"] }
+    ]
+  },
+  {
+    "name": "Kwilu",
+    "slug": "kwilu",
+    "territories": [
+      { "name": "Kikwit", "slug": "kikwit-territoire", "cities": ["Kikwit", "Idiofa-Kikwit"] },
+      { "name": "Bandundu", "slug": "bandundu-territoire", "cities": ["Bandundu", "Bulungu-Bandundu"] },
+      { "name": "Bulungu", "slug": "bulungu", "cities": ["Bulungu", "Gungu-Bulungu"] },
+      { "name": "Gungu", "slug": "gungu", "cities": ["Gungu", "Masimanimba-Gungu"] },
+      { "name": "Idiofa", "slug": "idiofa", "cities": ["Idiofa", "Mangai-Idiofa"] },
+      { "name": "Mangai", "slug": "mangai", "cities": ["Mangai", "Kikwit-Mangai"] },
+      { "name": "Masimanimba", "slug": "masimanimba", "cities": ["Masimanimba", "Kenge-Masimanimba"] }
+    ]
+  },
+  {
+    "name": "Kwango",
+    "slug": "kwango",
+    "territories": [
+      { "name": "Kenge", "slug": "kenge-territoire", "cities": ["Kenge", "Popokabaka-Kenge"] },
+      { "name": "Popokabaka", "slug": "popokabaka-territoire", "cities": ["Popokabaka", "Kasongo-Lunda-Popokabaka"] },
+      { "name": "Kasongo-Lunda", "slug": "kasongo-lunda", "cities": ["Kasongo-Lunda", "Feshi-Kasongo"] },
+      { "name": "Feshi", "slug": "feshi", "cities": ["Feshi", "Kahemba"] }
+    ]
+  },
+  {
+    "name": "Mai-Ndombe",
+    "slug": "mai-ndombe",
+    "territories": [
+      { "name": "Inongo", "slug": "inongo-territoire", "cities": ["Inongo", "Kiri-Inongo"] },
+      { "name": "Kiri", "slug": "kiri-territoire", "cities": ["Kiri", "Oshwe-Kiri"] },
+      { "name": "Kutu", "slug": "kutu", "cities": ["Kutu", "Bolobo-Kutu"] },
+      { "name": "Oshwe", "slug": "oshwe", "cities": ["Oshwe", "Inongo-Oshwe"] },
+      { "name": "Bolobo", "slug": "bolobo", "cities": ["Bolobo", "Mushie-Bolobo"] }
+    ]
+  },
+  {
+    "name": "Lomami",
+    "slug": "lomami",
+    "territories": [
+      { "name": "Mwene-Ditu", "slug": "mwene-ditu-territoire", "cities": ["Mwene-Ditu", "Kabinda-Lomami"] },
+      { "name": "Kabinda", "slug": "kabinda-lomami", "cities": ["Kabinda", "Ngandajika-Kabinda"] },
+      { "name": "Ngandajika", "slug": "ngandajika", "cities": ["Ngandajika", "Lubao-Ngandajika"] },
+      { "name": "Lubao", "slug": "lubao", "cities": ["Lubao", "Luabo-Lubao"] },
+      { "name": "Luabo", "slug": "luabo", "cities": ["Luabo", "Bena Mukongo"] },
+      { "name": "Bintulu", "slug": "bintulu", "cities": ["Bintulu", "Kamina-Bintulu"] }
+    ]
+  },
+  {
+    "name": "Haut-Lomami",
+    "slug": "haut-lomami",
+    "territories": [
+      { "name": "Kamina", "slug": "kamina-territoire", "cities": ["Kamina", "Kamina-Centre"] },
+      { "name": "Bukama", "slug": "bukama-territoire", "cities": ["Bukama", "Kamina-Bukama"] },
+      { "name": "Kabalo", "slug": "kabalo-haut-lomami", "cities": ["Kabalo", "Ankoro-Kabalo"] },
+      { "name": "Malemba-Nkulu", "slug": "malemba-nkulu", "cities": ["Malemba-Nkulu", "Kamina-Malemba"] }
+    ]
+  },
+  {
+    "name": "Sankuru",
+    "slug": "sankuru",
+    "territories": [
+      { "name": "Lusambo", "slug": "lusambo-territoire", "cities": ["Lusambo", "Lodja-Lusambo"] },
+      { "name": "Lodja", "slug": "lodja-territoire", "cities": ["Lodja", "Kole-Lodja"] },
+      { "name": "Kole", "slug": "kole", "cities": ["Kole", "Lomela-Kole"] },
+      { "name": "Lomela", "slug": "lomela", "cities": ["Lomela", "Lusambo-Lomela"] }
+    ]
+  },
+  {
+    "name": "Bas-Uele",
+    "slug": "bas-uele",
+    "territories": [
+      { "name": "Buta", "slug": "buta-territoire", "cities": ["Buta", "Bondo-Buta"] },
+      { "name": "Bondo", "slug": "bondo-territoire", "cities": ["Bondo", "Ango-Bondo"] },
+      { "name": "Ango", "slug": "ango", "cities": ["Ango", "Dungu-Ango"] }
+    ]
+  },
+  {
+    "name": "Haut-Uele",
+    "slug": "haut-uele",
+    "territories": [
+      { "name": "Isiro", "slug": "isiro-territoire", "cities": ["Isiro", "Wamba-Isiro"] },
+      { "name": "Wamba", "slug": "wamba", "cities": ["Wamba", "Niangara-Wamba"] },
+      { "name": "Watsa", "slug": "watsa-territoire", "cities": ["Watsa", "Faradje-Watsa"] },
+      { "name": "Faradje", "slug": "faradje", "cities": ["Faradje", "Aba-Faradje"] },
+      { "name": "Dungu", "slug": "dungu", "cities": ["Dungu", "Ango-Dungu"] },
+      { "name": "Niangara", "slug": "niangara", "cities": ["Niangara", "Rangu-Niangara"] },
+      { "name": "Rangu", "slug": "rangu", "cities": ["Rangu", "Bondo-Rangu"] }
+    ]
+  }
+]
