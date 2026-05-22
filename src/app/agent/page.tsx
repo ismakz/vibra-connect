@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Building2, Medal, TrendingUp } from "lucide-react";
 
+import { AgentDashboardNav } from "@/components/dashboard/agent-dashboard-nav";
 import { getAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -45,12 +46,11 @@ export default async function AgentPage() {
 
   return (
     <main className="mx-auto min-h-screen max-w-4xl px-4 py-10 text-white">
+      <AgentDashboardNav />
       <section className="glass rounded-2xl border border-white/10 p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-300/90">Bizaflow Agents</p>
-        <h1 className="mt-2 text-3xl font-black">Espace agent</h1>
-        <p className="mt-2 text-sm text-white/70">
-          Parrainage, commissions et performance sur le module marketplace VIBRA CONNECT.
-        </p>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-300/90">Espace agent</p>
+        <h1 className="mt-2 text-3xl font-black">Mon parrainage</h1>
+        <p className="mt-2 text-sm text-white/70">Partagez votre lien, suivez les business référés et vos commissions.</p>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-xl border border-white/10 bg-white/5 p-4">

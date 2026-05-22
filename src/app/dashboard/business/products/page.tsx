@@ -7,6 +7,7 @@ import { ProductServiceManageButton } from "@/components/dashboard/product-servi
 import { DashboardEmptyState } from "@/components/dashboard/dashboard-empty-state";
 import { DashboardFilterBar } from "@/components/dashboard/dashboard-filter-bar";
 import { DashboardGlassCard } from "@/components/dashboard/dashboard-glass-card";
+import { BusinessDashboardNav } from "@/components/dashboard/business-dashboard-nav";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { formatRating, getBusinessCoverImage, isDataImage } from "@/lib/business-ui";
 import { getAuthSession } from "@/lib/auth";
@@ -56,7 +57,7 @@ function formatPrice(value: number | null, currency: string) {
 }
 
 export default async function BusinessProductsPage({ searchParams }: { searchParams: SearchParams }) {
-  const session = await guardBusinessOwnerArea("/dashboard/business/products");
+  const session = await guardBusinessOwnerArea();
   const imageUploadConfigured = isImageUploadConfigured();
 
   const params = await searchParams;
@@ -276,9 +277,11 @@ export default async function BusinessProductsPage({ searchParams }: { searchPar
         }
       />
 
+      <BusinessDashboardNav />
+
       {!databaseAvailable && (
         <p className="mt-4 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-          Base de donnees indisponible pour le moment. Affichage en mode vitrine.
+          Base de données indisponible pour le moment. Affichage en mode vitrine.
         </p>
       )}
 

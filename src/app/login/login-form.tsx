@@ -46,7 +46,7 @@ export function LoginForm() {
       redirect: false,
     });
     if (result?.error) {
-      setError("Connexion impossible, verifiez vos informations.");
+      setError("Connexion impossible. Vérifiez votre e-mail et votre mot de passe.");
       return;
     }
     router.push(afterLoginHref);

@@ -4,6 +4,7 @@ import { BarChart3, LineChart, MessageCircle, PhoneCall, Share2, TrendingUp } fr
 import { DashboardEmptyState } from "@/components/dashboard/dashboard-empty-state";
 import { DashboardFilterBar } from "@/components/dashboard/dashboard-filter-bar";
 import { DashboardGlassCard } from "@/components/dashboard/dashboard-glass-card";
+import { BusinessDashboardNav } from "@/components/dashboard/business-dashboard-nav";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { guardBusinessOwnerArea } from "@/lib/dashboard-business-access";
 import { prisma } from "@/lib/prisma";
@@ -24,7 +25,7 @@ function formatDay(d: Date) {
 }
 
 export default async function BusinessStatsPage({ searchParams }: { searchParams: SearchParams }) {
-  const session = await guardBusinessOwnerArea("/dashboard/business/stats");
+  const session = await guardBusinessOwnerArea();
 
   const params = await searchParams;
   const range = params.status ?? "30d";
@@ -188,9 +189,11 @@ export default async function BusinessStatsPage({ searchParams }: { searchParams
         }
       />
 
+      <BusinessDashboardNav />
+
       {!databaseAvailable && (
         <div className="mt-4 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-          Base de donnees indisponible. Affichage d&apos;un aperçu vitrine.
+          Base de données indisponible. Affichage d&apos;un aperçu vitrine.
         </div>
       )}
 

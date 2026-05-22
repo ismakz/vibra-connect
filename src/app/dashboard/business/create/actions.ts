@@ -25,7 +25,9 @@ export async function createFirstBusinessAction(formData: FormData) {
   const name = formData.get("name")?.toString() ?? "";
   const cityId = formData.get("cityId")?.toString() ?? "";
   const categoryId = formData.get("categoryId")?.toString() ?? "";
-  if (!name || !cityId || !categoryId) return;
+  if (!name.trim() || !cityId || !categoryId) {
+    redirect("/dashboard/business/create?error=champs_requis");
+  }
 
   const baseSlug = slugify(name);
   const exists = await prisma.business.count({ where: { slug: { startsWith: baseSlug } } });

@@ -11,6 +11,7 @@ export const authOptions: NextAuthOptions = {
   // Pas d'adapter Prisma ici : Credentials + JWT n'en ont pas besoin, et
   // @auth/prisma-adapter v2 est incompatible avec next-auth v4 (erreur Configuration).
   session: { strategy: "jwt" as const },
+  useSecureCookies: process.env.NODE_ENV === "production",
   pages: { signIn: "/login", error: "/login" },
   providers: [
     Credentials({
@@ -47,20 +48,40 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    jwt({ token, user }) {
+    async jwt({ token, user }) {
       if (user) {
         const u = user as { id: string; role?: UserRole };
         token.sub = u.id;
         token.role = u.role ?? UserRole.CLIENT;
       }
+
+      const sub = typeof token.sub === "string" ? token.sub : undefined;
+      if (sub && !token.role) {
+        try {
+          const row = await prisma.user.findUnique({
+            where: { id: sub },
+            select: { role: true },
+          });
+          if (row) token.role = row.role;
+        } catch {
+          token.role = UserRole.CLIENT;
+        }
+      }
+
+      if (!token.sub && typeof token.id === "string") {
+        token.sub = token.id;
+      }
+
       return token;
     },
     async session({ session, token }) {
-      if (session.user && token.sub) {
-        session.user.id = token.sub;
+      const sub = typeof token.sub === "string" ? token.sub : undefined;
+      if (session.user && sub) {
+        session.user.id = sub;
+        const roleFromToken = token.role as UserRole | undefined;
         try {
           const row = await prisma.user.findUnique({
-            where: { id: token.sub },
+            where: { id: sub },
             select: { role: true, name: true, email: true },
           });
           if (row) {
@@ -68,10 +89,10 @@ export const authOptions: NextAuthOptions = {
             if (row.name) session.user.name = row.name;
             if (row.email) session.user.email = row.email;
           } else {
-            session.user.role = (token.role as UserRole) ?? UserRole.CLIENT;
+            session.user.role = roleFromToken ?? UserRole.CLIENT;
           }
         } catch {
-          session.user.role = (token.role as UserRole) ?? UserRole.CLIENT;
+          session.user.role = roleFromToken ?? UserRole.CLIENT;
         }
       }
       return session;

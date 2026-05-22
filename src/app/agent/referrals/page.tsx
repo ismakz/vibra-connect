@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { AgentDashboardNav } from "@/components/dashboard/agent-dashboard-nav";
 import { getAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -28,10 +29,12 @@ export default async function AgentReferralsPage() {
 
   return (
     <main className="mx-auto min-h-screen max-w-6xl px-4 py-10 text-white">
+      <AgentDashboardNav />
       <section className="glass rounded-2xl border border-white/10 p-6">
-        <h1 className="text-2xl font-black">Business referes</h1>
+        <h1 className="text-2xl font-black">Business référés</h1>
         <p className="mt-2 text-sm text-white/70">
-          Code agent: <span className="font-mono text-cyan-200">{agentProfile.code}</span> · {referrals.length} business rattache(s)
+          Code agent : <span className="font-mono text-cyan-200">{agentProfile.code}</span> · {referrals.length} business
+          référé{referrals.length > 1 ? "s" : ""}
         </p>
         {referrals.length === 0 ? (
           <p className="mt-5 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70">

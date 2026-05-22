@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { BusinessEditForm } from "@/components/dashboard/business-edit-form";
+import { BusinessDashboardNav } from "@/components/dashboard/business-dashboard-nav";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { guardBusinessOwnerArea } from "@/lib/dashboard-business-access";
 import { isImageUploadConfigured } from "@/lib/image-upload-config";
@@ -9,7 +10,7 @@ import { FALLBACK_PLATFORM_SETTINGS, getPlatformSettings } from "@/lib/platform-
 import { prisma } from "@/lib/prisma";
 
 export default async function BusinessEditPage() {
-  const session = await guardBusinessOwnerArea("/dashboard/business/edit");
+  const session = await guardBusinessOwnerArea();
   const imageUploadConfigured = isImageUploadConfigured();
 
   let databaseAvailable = true;
@@ -87,16 +88,13 @@ export default async function BusinessEditPage() {
         title="Modifier mon business"
         subtitle="Mettez à jour votre profil public et améliorez votre visibilité sur VIBRA CONNECT."
         statusBadge={databaseAvailable ? "Sauvegarde active" : "Mode vitrine"}
-        action={
-          <Link href="/dashboard/business" className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm hover:border-cyan-300/35">
-            Retour dashboard
-          </Link>
-        }
       />
+
+      <BusinessDashboardNav />
 
       {!databaseAvailable && (
         <div className="mt-4 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-          Base de donnees indisponible. Le formulaire est visible mais la sauvegarde est désactivée.
+          Base de données indisponible. Le formulaire est visible mais la sauvegarde est désactivée.
         </div>
       )}
 

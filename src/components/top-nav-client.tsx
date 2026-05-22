@@ -18,7 +18,12 @@ import { useEffect, useRef, useState } from "react";
 
 import { UserAvatar } from "@/components/user-avatar";
 import { isPlatformCeoRole } from "@/lib/ceo-platform";
-import { dashboardHrefForRole, EXPLORE_MARKET_HREF, navRoleBadge } from "@/lib/nav-user";
+import {
+  dashboardHrefForRole,
+  EXPLORE_MARKET_HREF,
+  navBusinessLinkLabel,
+  navRoleBadge,
+} from "@/lib/nav-user";
 
 export type TopNavUser = {
   id: string;
@@ -52,7 +57,7 @@ function ProfileMenu({ navUser }: { navUser: TopNavUser }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 rounded-full border border-white/15 bg-white/5 py-1.5 pl-1.5 pr-2.5 text-left text-sm shadow-[0_0_24px_rgba(0,0,0,0.25)] backdrop-blur-md transition hover:border-cyan-400/35 hover:bg-white/10"
+        className="flex min-h-[44px] items-center gap-2 rounded-full border border-white/15 bg-white/5 py-1.5 pl-1.5 pr-2.5 text-left text-sm shadow-[0_0_24px_rgba(0,0,0,0.25)] backdrop-blur-md transition hover:border-cyan-400/35 hover:bg-white/10"
         aria-expanded={open}
         aria-haspopup="menu"
       >
@@ -79,7 +84,7 @@ function ProfileMenu({ navUser }: { navUser: TopNavUser }) {
           </Link>
           <Link href={dash} className={itemClass} role="menuitem" onClick={() => setOpen(false)}>
             <LayoutDashboard className="h-4 w-4 text-violet-300" />
-            Mon dashboard
+            Mon espace
           </Link>
           <Link href="/profile/edit" className={itemClass} role="menuitem" onClick={() => setOpen(false)}>
             <Settings className="h-4 w-4 text-white/70" />
@@ -105,26 +110,34 @@ export function TopNavClient({
   isAuthenticated,
 }: {
   navUser: TopNavUser | null;
-  /** Calculé côté serveur (session + rôle DB) — ne pas recalculer ici pour éviter décalage prod. */
   businessHref: string;
   isAuthenticated: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
-  const ceoLink =
-    navUser && isPlatformCeoRole(navUser.role) ? ([{ href: "/dashboard/ceo", label: "CEO Command Center" }] as const) : [];
+  const businessNavLabel = navBusinessLinkLabel(navUser?.role, isAuthenticated);
 
-  const coreLinks: Array<{ href: string; label: string }> = [
+  const links: Array<{ href: string; label: string }> = [
     { href: "/", label: "Accueil" },
     { href: EXPLORE_MARKET_HREF, label: "Marketplace" },
-    { href: businessHref, label: "Business" },
   ];
-  if (navUser?.role === "AGENT") {
-    coreLinks.push({ href: "/agent", label: "Agents" });
-  }
-  coreLinks.push({ href: "/tarifs", label: "Tarifs" });
 
-  const links = [...ceoLink, ...coreLinks];
+  if (businessNavLabel) {
+    links.push({ href: businessHref, label: businessNavLabel });
+  }
+
+  links.push({ href: "/tarifs", label: "Tarifs" });
+
+  const publishLabel =
+    !isAuthenticated || navUser?.role === "CLIENT"
+      ? "Publier mon business"
+      : navUser?.role === "BUSINESS_OWNER"
+        ? "Mon business"
+        : isPlatformCeoRole(navUser?.role ?? "")
+          ? "Pilotage plateforme"
+          : navUser?.role === "AGENT"
+            ? "Espace agent"
+            : "Publier mon business";
 
   return (
     <header
@@ -146,12 +159,12 @@ export function TopNavClient({
             <span className="truncate text-sm font-bold tracking-[0.18em] text-white">VIBRA CONNECT</span>
           </span>
           <span className="hidden text-[10px] font-semibold uppercase tracking-[0.28em] text-white/40 sm:inline">
-            Bizaflow marketplace
+            Marketplace Afrique
           </span>
         </Link>
-        <nav className="hidden items-center gap-5 text-sm text-white/75 lg:flex xl:gap-7">
+        <nav className="hidden items-center gap-5 text-sm text-white/75 lg:flex xl:gap-7" aria-label="Navigation principale">
           {links.map((link) => (
-            <Link key={link.href} href={link.href} className="whitespace-nowrap transition hover:text-white">
+            <Link key={link.href + link.label} href={link.href} className="whitespace-nowrap transition hover:text-white">
               {link.label}
             </Link>
           ))}
@@ -161,12 +174,15 @@ export function TopNavClient({
             <ProfileMenu navUser={navUser} />
           ) : (
             <>
-              <Link href="/login" className="rounded-full border border-white/20 px-3 py-2 text-sm whitespace-nowrap sm:px-4">
+              <Link
+                href="/login"
+                className="inline-flex min-h-[44px] items-center rounded-full border border-white/20 px-4 py-2 text-sm whitespace-nowrap"
+              >
                 Connexion
               </Link>
               <Link
                 href="/register"
-                className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-sm font-medium text-white/90 shadow-[0_0_24px_rgba(0,0,0,0.25)] backdrop-blur-md transition hover:border-cyan-400/35 hover:bg-white/10 whitespace-nowrap sm:px-4"
+                className="inline-flex min-h-[44px] items-center rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white/90 shadow-[0_0_24px_rgba(0,0,0,0.25)] backdrop-blur-md transition hover:border-cyan-400/35 hover:bg-white/10 whitespace-nowrap"
               >
                 Créer un compte
               </Link>
@@ -174,15 +190,15 @@ export function TopNavClient({
           )}
           <Link
             href={businessHref}
-            className="rounded-full bg-gradient-to-r from-violet-600 to-cyan-500 px-3 py-2 text-sm font-semibold text-black whitespace-nowrap sm:px-4"
+            className="inline-flex min-h-[44px] items-center rounded-full bg-gradient-to-r from-violet-600 to-cyan-500 px-4 py-2 text-sm font-semibold text-black whitespace-nowrap hover:from-violet-500 hover:to-cyan-400"
           >
-            Publier mon business
+            {publishLabel}
           </Link>
         </div>
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="shrink-0 rounded-lg border border-white/20 p-2 md:hidden"
+          className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg border border-white/20 p-2 md:hidden"
           aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
         >
           {open ? <X size={18} /> : <Menu size={18} />}
@@ -205,41 +221,49 @@ export function TopNavClient({
           ) : null}
           {links.map((link) => (
             <Link
-              key={link.href}
+              key={link.href + link.label}
               href={link.href}
               onClick={() => setOpen(false)}
-              className="block rounded-lg bg-white/5 px-3 py-2 text-sm"
+              className="block min-h-[44px] rounded-lg bg-white/5 px-3 py-2.5 text-sm leading-[44px]"
             >
               {link.label}
             </Link>
           ))}
           {isAuthenticated && navUser ? (
             <>
-              <Link href="/profile" onClick={() => setOpen(false)} className="block rounded-lg bg-white/5 px-3 py-2 text-sm">
+              <Link href="/profile" onClick={() => setOpen(false)} className="block min-h-[44px] rounded-lg bg-white/5 px-3 py-2.5 text-sm">
                 Mon profil
               </Link>
-              <Link href={dashboardHrefForRole(navUser.role)} onClick={() => setOpen(false)} className="block rounded-lg bg-white/5 px-3 py-2 text-sm">
-                Mon dashboard
+              <Link
+                href={dashboardHrefForRole(navUser.role)}
+                onClick={() => setOpen(false)}
+                className="block min-h-[44px] rounded-lg bg-white/5 px-3 py-2.5 text-sm"
+              >
+                Mon espace
               </Link>
-              <Link href="/profile/edit" onClick={() => setOpen(false)} className="block rounded-lg bg-white/5 px-3 py-2 text-sm">
+              <Link href="/profile/edit" onClick={() => setOpen(false)} className="block min-h-[44px] rounded-lg bg-white/5 px-3 py-2.5 text-sm">
                 Paramètres
               </Link>
-              <Link href="/notifications" onClick={() => setOpen(false)} className="block rounded-lg bg-white/5 px-3 py-2 text-sm">
+              <Link href="/notifications" onClick={() => setOpen(false)} className="block min-h-[44px] rounded-lg bg-white/5 px-3 py-2.5 text-sm">
                 Notifications
               </Link>
-              <Link href="/logout" onClick={() => setOpen(false)} className="block rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-100">
+              <Link
+                href="/logout"
+                onClick={() => setOpen(false)}
+                className="block min-h-[44px] rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2.5 text-sm text-rose-100"
+              >
                 Déconnexion
               </Link>
             </>
           ) : (
             <>
-              <Link href="/login" onClick={() => setOpen(false)} className="block rounded-lg border border-white/20 px-3 py-2 text-sm">
+              <Link href="/login" onClick={() => setOpen(false)} className="block min-h-[44px] rounded-lg border border-white/20 px-3 py-2.5 text-sm">
                 Connexion
               </Link>
               <Link
                 href="/register"
                 onClick={() => setOpen(false)}
-                className="block rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm font-medium text-white/90 backdrop-blur-md"
+                className="block min-h-[44px] rounded-lg border border-white/15 bg-white/5 px-3 py-2.5 text-sm font-medium text-white/90"
               >
                 Créer un compte
               </Link>
@@ -248,9 +272,9 @@ export function TopNavClient({
           <Link
             href={businessHref}
             onClick={() => setOpen(false)}
-            className="block rounded-lg bg-gradient-to-r from-violet-600 to-cyan-500 px-3 py-2 text-sm font-semibold text-black"
+            className="block min-h-[44px] rounded-lg bg-gradient-to-r from-violet-600 to-cyan-500 px-3 py-2.5 text-center text-sm font-semibold text-black"
           >
-            Publier mon business
+            {publishLabel}
           </Link>
         </div>
       </motion.div>

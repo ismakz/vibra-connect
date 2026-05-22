@@ -5,6 +5,7 @@ import { Clock3, Phone, Sparkles, Store, TrendingUp } from "lucide-react";
 import { BusinessActivityChart } from "@/components/dashboard/business-activity-chart";
 import { DashboardEmptyState } from "@/components/dashboard/dashboard-empty-state";
 import { DashboardGlassCard } from "@/components/dashboard/dashboard-glass-card";
+import { BusinessDashboardNav } from "@/components/dashboard/business-dashboard-nav";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { guardBusinessOwnerArea } from "@/lib/dashboard-business-access";
 import { bucketCountsByDay } from "@/lib/dashboard-business-analytics";
@@ -28,7 +29,7 @@ type DashboardBusiness = {
 };
 
 export default async function BusinessDashboardPage() {
-  const session = await guardBusinessOwnerArea("/dashboard/business");
+  const session = await guardBusinessOwnerArea();
 
   let databaseAvailable = true;
   let business: DashboardBusiness | null = null;
@@ -143,26 +144,15 @@ export default async function BusinessDashboardPage() {
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-4 py-8 text-white">
       <DashboardPageHeader
-        title="Dashboard business"
-        subtitle="Pilotez votre visibilité, vos contacts et vos offres depuis votre espace propriétaire."
-        action={
-          <>
-            <Link href="/dashboard/business/edit" className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm hover:border-cyan-300/40 hover:text-cyan-200">
-              Modifier mon business
-            </Link>
-            <Link href="/dashboard/business/products" className="rounded-full bg-cyan-500 px-4 py-2 text-sm font-semibold text-black hover:bg-cyan-400">
-              Ajouter un produit/service
-            </Link>
-            <Link href="/dashboard/business/promotions" className="rounded-full bg-violet-600 px-4 py-2 text-sm font-semibold hover:bg-violet-500">
-              Créer une promotion
-            </Link>
-          </>
-        }
+        title="Vue d'ensemble"
+        subtitle="Votre activité, vos contacts et vos offres sur la marketplace."
       />
+
+      <BusinessDashboardNav />
 
       {!databaseAvailable && (
         <div className="mt-4 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-          Base de donnees indisponible pour le moment. Affichage en mode vitrine.
+          Base de données indisponible pour le moment. Affichage en mode vitrine.
         </div>
       )}
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { BizapaySubscriptionForm } from "@/components/dashboard/bizapay-subscription-form";
 import { DashboardGlassCard } from "@/components/dashboard/dashboard-glass-card";
+import { BusinessDashboardNav } from "@/components/dashboard/business-dashboard-nav";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { guardBusinessOwnerArea } from "@/lib/dashboard-business-access";
 import { isImageUploadConfigured } from "@/lib/image-upload-config";
@@ -10,7 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { formatMarketplacePlan } from "@/lib/subscription-rules";
 
 export default async function BusinessSubscriptionPage() {
-  const session = await guardBusinessOwnerArea("/dashboard/business/subscription");
+  const session = await guardBusinessOwnerArea();
   const imageUploadConfigured = isImageUploadConfigured();
 
   const [business, settings, payments] = await Promise.all([
@@ -61,6 +62,8 @@ export default async function BusinessSubscriptionPage() {
         subtitle="Choisissez votre plan, payez via Mobile Money, puis laissez le CEO valider l’activation."
       />
 
+      <BusinessDashboardNav />
+
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <DashboardGlassCard className="p-5">
           <h2 className="text-lg font-bold">Nouvelle demande de paiement</h2>
@@ -103,7 +106,7 @@ export default async function BusinessSubscriptionPage() {
           {business.expiresAt && (
             <p className="text-sm text-white/60">Expiration: {business.expiresAt.toLocaleDateString("fr-FR")}</p>
           )}
-          <Link href="/pricing" className="mt-4 inline-flex rounded-full border border-white/20 px-3 py-1.5 text-xs hover:border-cyan-300/40">
+          <Link href="/tarifs" className="mt-4 inline-flex rounded-full border border-white/20 px-3 py-1.5 text-xs hover:border-cyan-300/40">
             Voir la grille des plans
           </Link>
         </DashboardGlassCard>

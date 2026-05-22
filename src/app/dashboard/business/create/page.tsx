@@ -14,8 +14,16 @@ import { createFirstBusinessAction } from "./actions";
  * Si redirection vers login : activer `BUSINESS_CREATE_GUARD_DEBUG=1` sur Vercel
  * pour journaliser `[vc-business-create-guard]` (sans données personnelles).
  */
-export default async function BusinessCreatePage() {
+type SearchParams = Promise<{ error?: string }>;
+
+const ERROR_MESSAGES: Record<string, string> = {
+  champs_requis: "Veuillez remplir le nom, la ville et la catégorie.",
+};
+
+export default async function BusinessCreatePage({ searchParams }: { searchParams: SearchParams }) {
   await guardBusinessCreatePage();
+  const sp = await searchParams;
+  const formError = sp.error ? ERROR_MESSAGES[sp.error] ?? "Une erreur est survenue. Réessayez." : null;
 
   let databaseAvailable = true;
   let locationTree: Awaited<ReturnType<typeof getLocationTree>> = [];
@@ -49,6 +57,12 @@ export default async function BusinessCreatePage() {
           Base de données indisponible. Réessayez sous peu pour publier votre business.
         </p>
       )}
+
+      {formError ? (
+        <p className="mt-4 rounded-xl border border-rose-400/35 bg-rose-500/10 px-4 py-3 text-sm text-rose-100" role="alert">
+          {formError}
+        </p>
+      ) : null}
 
       <DashboardGlassCard className="mt-6 max-w-xl p-5">
         <form action={createFirstBusinessAction} className="space-y-3">

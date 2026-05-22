@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { Shield } from "lucide-react";
 
 import { CeoAnalyticsCharts } from "@/components/ceo/analytics-charts";
@@ -15,8 +14,7 @@ import { UrgentSaleDisableButton } from "@/components/ceo/urgent-sale-disable-bu
 import { CeoUsersSection } from "@/components/ceo/users-section";
 import { DashboardGlassCard } from "@/components/dashboard/dashboard-glass-card";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
-import { getAuthSession } from "@/lib/auth";
-import { CEO_API_OVERVIEW_PATH, isPlatformCeoRole } from "@/lib/ceo-platform";
+import { CEO_API_OVERVIEW_PATH } from "@/lib/ceo-platform";
 import { getCeoCommandCenterOverview } from "@/lib/ceo-queries";
 import { getLocationTree } from "@/lib/location-queries";
 import { getPlatformSettings } from "@/lib/platform-settings";
@@ -31,10 +29,6 @@ type SearchParams = Promise<{
 }>;
 
 export default async function CeoCommandCenterPage({ searchParams }: { searchParams: SearchParams }) {
-  const session = await getAuthSession();
-  if (!session) redirect("/login");
-  if (!isPlatformCeoRole(session.user.role)) redirect("/");
-
   const sp = await searchParams;
   const [overview, platformSettings] = await Promise.all([getCeoCommandCenterOverview(), getPlatformSettings()]);
   const ceoLocationTree = overview.ok === true ? await getLocationTree().catch(() => []) : [];
@@ -46,8 +40,8 @@ export default async function CeoCommandCenterPage({ searchParams }: { searchPar
         aria-hidden
       />
       <DashboardPageHeader
-        title="CEO Command Center"
-        subtitle="Bizaflow — pilotage plateforme · module marketplace VIBRA CONNECT (KPIs Prisma & Supabase, actions sécurisées)."
+        title="Pilotage plateforme"
+        subtitle="Vue d'ensemble, validation des businesses, paiements Bizapay, agents et modération."
         statusBadge="CEO"
         action={
           <div className="flex flex-wrap gap-2">
@@ -58,16 +52,10 @@ export default async function CeoCommandCenterPage({ searchParams }: { searchPar
               Vitrine
             </Link>
             <Link
-              href="/admin"
-              className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold hover:border-cyan-300/35"
-            >
-              Console legacy
-            </Link>
-            <Link
               href={CEO_API_OVERVIEW_PATH}
               className="rounded-full border border-cyan-400/35 bg-gradient-to-r from-cyan-500/25 to-violet-500/20 px-4 py-2 text-sm font-semibold text-cyan-50 shadow-[0_0_24px_rgba(6,182,212,0.15)] hover:from-cyan-500/35 hover:to-violet-500/30"
             >
-              Export JSON
+              Export données
             </Link>
           </div>
         }
@@ -75,7 +63,7 @@ export default async function CeoCommandCenterPage({ searchParams }: { searchPar
 
       <div className="mt-2 flex items-center gap-2 text-xs text-white/50">
         <Shield className="h-4 w-4 text-cyan-300/70" aria-hidden />
-        <span>Accès CEO — journalisation serveur sur chaque mutation.</span>
+        <span>Chaque action sensible est enregistrée côté serveur.</span>
       </div>
 
       <div className="mt-6">
@@ -93,56 +81,97 @@ export default async function CeoCommandCenterPage({ searchParams }: { searchPar
         </DashboardGlassCard>
       ) : (
         <>
-          <div className="mt-2">
+          <div className="mt-2" id="kpis">
             <CeoKpiStrip kpis={overview.kpis} />
           </div>
 
-          <DashboardGlassCard className="mt-6 border border-rose-400/25 bg-rose-500/[0.07] p-5">
-            <h2 className="text-lg font-bold text-rose-100">Modération marketplace</h2>
-            <p className="mt-1 text-sm text-white/70">
-              Validation business, paiements Bizapay, signalements et « blacklist » opérationnelles (statuts{" "}
-              <span className="font-mono text-xs">SUSPENDED / REJECTED</span>) depuis les tableaux ci-dessous — chaque action
-              est tracée côté serveur.
-            </p>
-            <ul className="mt-3 list-inside list-disc space-y-1 text-sm text-white/80">
-              <li>
-                <a href="#moderation" className="text-cyan-200 hover:underline">
-                  Ventes en urgence
-                </a>{" "}
-                — retrait abusif (badge retiré, prix catalogue restauré).
-              </li>
-              <li>
-                <a href="#business" className="text-cyan-200 hover:underline">
-                  Businesses
-                </a>{" "}
-                — valider, suspendre ou supprimer (PENDING → ACTIVE).
-              </li>
-              <li>
-                <a href="#payments" className="text-cyan-200 hover:underline">
-                  Paiements
-                </a>{" "}
-                — approuver / rejeter les preuves Bizapay.
-              </li>
-              <li>
-                <a href="#moderation" className="text-cyan-200 hover:underline">
-                  Signalements
-                </a>{" "}
-                — traiter le contenu signalé.
-              </li>
-              <li>
-                <a href="#users" className="text-cyan-200 hover:underline">
-                  Utilisateurs
-                </a>{" "}
-                — rétrograder un compte problématique (CLIENT).
-              </li>
-            </ul>
-          </DashboardGlassCard>
-
           <div className="mt-8 space-y-8">
-            <PlatformSettingsPanel initial={platformSettings} />
-
             <CeoBusinessSection searchParams={sp} />
-            <CeoUsersSection searchParams={sp} />
+
+            <DashboardGlassCard className="p-0" id="payments">
+              <div className="border-b border-white/10 p-4">
+                <h2 className="text-lg font-bold">Paiements Bizapay</h2>
+                <div className="mt-2 flex flex-wrap gap-3 text-xs font-semibold">
+                  <span className="rounded-full bg-amber-500/20 px-3 py-1 text-amber-100">
+                    En attente : {overview.paymentCounts.pending}
+                  </span>
+                  <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-emerald-100">
+                    Approuvés : {overview.paymentCounts.approved}
+                  </span>
+                  <span className="rounded-full bg-red-500/20 px-3 py-1 text-red-100">
+                    Rejetés : {overview.paymentCounts.rejected}
+                  </span>
+                  <span className="rounded-full bg-white/10 px-3 py-1 text-white/80">
+                    Expirés : {overview.paymentCounts.expired}
+                  </span>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1180px] text-left text-sm">
+                  <thead className="border-b border-white/10 bg-white/5 text-xs uppercase tracking-wide text-white/55">
+                    <tr>
+                      <th className="px-3 py-3">Réf.</th>
+                      <th className="px-3 py-3">Plan</th>
+                      <th className="px-3 py-3">Méthode</th>
+                      <th className="px-3 py-3">Montant</th>
+                      <th className="px-3 py-3">Statut</th>
+                      <th className="px-3 py-3">Business</th>
+                      <th className="px-3 py-3">Payeur</th>
+                      <th className="px-3 py-3">Preuve</th>
+                      <th className="px-3 py-3">Commentaire</th>
+                      <th className="px-3 py-3">Date</th>
+                      <th className="px-3 py-3">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {overview.recentPayments.map((p) => (
+                      <tr key={p.id} className="border-b border-white/5 hover:bg-white/[0.03]">
+                        <td className="px-3 py-3 font-mono text-xs">{p.reference}</td>
+                        <td className="px-3 py-3 text-xs">{p.requestedPlan}</td>
+                        <td className="px-3 py-3 text-xs">{p.paymentMethod}</td>
+                        <td className="px-3 py-3">
+                          {p.amount.toLocaleString("fr-FR")} {p.currency}
+                        </td>
+                        <td className="px-3 py-3">
+                          <span
+                            className={[
+                              "rounded-full px-2 py-0.5 text-xs font-semibold",
+                              p.status === "APPROVED"
+                                ? "bg-emerald-500/20 text-emerald-100"
+                                : p.status === "PENDING"
+                                  ? "bg-amber-500/20 text-amber-100"
+                                  : p.status === "REJECTED"
+                                    ? "bg-red-500/20 text-red-100"
+                                    : "bg-white/10 text-white/70",
+                            ].join(" ")}
+                          >
+                            {p.status}
+                          </span>
+                        </td>
+                        <td className="px-3 py-3 text-white/80">{p.businessName}</td>
+                        <td className="px-3 py-3 text-xs text-white/65">{p.userEmail}</td>
+                        <td className="px-3 py-3 text-xs">
+                          {p.proofImageUrl ? (
+                            <a href={p.proofImageUrl} target="_blank" className="text-cyan-200 hover:underline">
+                              Voir capture
+                            </a>
+                          ) : (
+                            <span className="text-white/50">—</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-3 text-xs text-white/65">{p.ceoComment || "—"}</td>
+                        <td className="px-3 py-3 text-xs text-white/55">
+                          {p.createdAt.toLocaleString("fr-FR")}
+                        </td>
+                        <td className="px-3 py-3">
+                          <PaymentRowActions paymentId={p.id} status={p.status} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </DashboardGlassCard>
 
             <DashboardGlassCard className="p-0" id="agents">
               <div className="flex flex-col gap-3 border-b border-white/10 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -206,115 +235,24 @@ export default async function CeoCommandCenterPage({ searchParams }: { searchPar
               </div>
             </DashboardGlassCard>
 
-            <DashboardGlassCard className="p-0" id="payments">
-              <div className="border-b border-white/10 p-4">
-                <h2 className="text-lg font-bold">Paiements Bizapay</h2>
-                <div className="mt-2 flex flex-wrap gap-3 text-xs font-semibold">
-                  <span className="rounded-full bg-amber-500/20 px-3 py-1 text-amber-100">
-                    Pending: {overview.paymentCounts.pending}
-                  </span>
-                  <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-emerald-100">
-                    Approuvés: {overview.paymentCounts.approved}
-                  </span>
-                  <span className="rounded-full bg-red-500/20 px-3 py-1 text-red-100">
-                    Rejetés: {overview.paymentCounts.rejected}
-                  </span>
-                  <span className="rounded-full bg-white/10 px-3 py-1 text-white/80">
-                    Expirés: {overview.paymentCounts.expired}
-                  </span>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[1180px] text-left text-sm">
-                  <thead className="border-b border-white/10 bg-white/5 text-xs uppercase tracking-wide text-white/55">
-                    <tr>
-                      <th className="px-3 py-3">Réf.</th>
-                      <th className="px-3 py-3">Plan</th>
-                      <th className="px-3 py-3">Méthode</th>
-                      <th className="px-3 py-3">Montant</th>
-                      <th className="px-3 py-3">Statut</th>
-                      <th className="px-3 py-3">Business</th>
-                      <th className="px-3 py-3">Payeur</th>
-                      <th className="px-3 py-3">Preuve</th>
-                      <th className="px-3 py-3">Commentaire CEO</th>
-                      <th className="px-3 py-3">Date</th>
-                      <th className="px-3 py-3">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {overview.recentPayments.map((p) => (
-                      <tr key={p.id} className="border-b border-white/5 hover:bg-white/[0.03]">
-                        <td className="px-3 py-3 font-mono text-xs">{p.reference}</td>
-                        <td className="px-3 py-3 text-xs">{p.requestedPlan}</td>
-                        <td className="px-3 py-3 text-xs">{p.paymentMethod}</td>
-                        <td className="px-3 py-3">
-                          {p.amount.toLocaleString("fr-FR")} {p.currency}
-                        </td>
-                        <td className="px-3 py-3">
-                          <span
-                            className={[
-                              "rounded-full px-2 py-0.5 text-xs font-semibold",
-                              p.status === "APPROVED"
-                                ? "bg-emerald-500/20 text-emerald-100"
-                                : p.status === "PENDING"
-                                  ? "bg-amber-500/20 text-amber-100"
-                                  : p.status === "REJECTED"
-                                    ? "bg-red-500/20 text-red-100"
-                                    : "bg-white/10 text-white/70",
-                            ].join(" ")}
-                          >
-                            {p.status}
-                          </span>
-                        </td>
-                        <td className="px-3 py-3 text-white/80">{p.businessName}</td>
-                        <td className="px-3 py-3 text-xs text-white/65">{p.userEmail}</td>
-                        <td className="px-3 py-3 text-xs">
-                          {p.proofImageUrl ? (
-                            <a href={p.proofImageUrl} target="_blank" className="text-cyan-200 hover:underline">
-                              Voir capture
-                            </a>
-                          ) : (
-                            <span className="text-white/50">—</span>
-                          )}
-                        </td>
-                        <td className="px-3 py-3 text-xs text-white/65">{p.ceoComment || "—"}</td>
-                        <td className="px-3 py-3 text-xs text-white/55">
-                          {p.createdAt.toLocaleString("fr-FR")}
-                        </td>
-                        <td className="px-3 py-3">
-                          <PaymentRowActions paymentId={p.id} status={p.status} />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </DashboardGlassCard>
-
-            <CeoAnalyticsCharts
-              signupsByDay={overview.analytics.signupsByDay}
-              businessesByDay={overview.analytics.businessesByDay}
-              viewsByDay={overview.analytics.viewsByDay}
-              topCities={overview.analytics.topCities}
-              topCategories={overview.analytics.topCategories}
-            />
+            <CeoUsersSection searchParams={sp} />
 
             <DashboardGlassCard className="p-0" id="moderation">
               <div className="border-b border-white/10 p-4">
                 <h2 className="text-lg font-bold">Modération</h2>
                 <p className="text-sm text-white/65">
-                  Signalements ouverts — business « bloqués » (suspendus + rejetés) :{" "}
+                  Signalements ouverts — businesses suspendus ou refusés :{" "}
                   <span className="font-semibold text-amber-200">{overview.blockedBusinesses}</span>
                 </p>
                 <p className="mt-2 text-sm text-white/70">
-                  Ventes en urgence actives (marketplace) :{" "}
+                  Ventes en urgence actives :{" "}
                   <span className="font-semibold text-orange-200">{overview.kpis.activeUrgentSales}</span>
                 </p>
               </div>
               <div className="border-b border-white/10 p-4">
                 <h3 className="text-sm font-bold text-orange-100">Ventes en urgence</h3>
                 <p className="mt-1 text-xs text-white/55">
-                  Désactivation = retire le badge urgence et restaure le prix catalogue. Le produit reste publié.
+                  Retrait du badge urgence et restauration du prix catalogue. Le produit reste en ligne.
                 </p>
                 <div className="mt-3 overflow-x-auto">
                   <table className="w-full min-w-[920px] text-left text-sm">
@@ -390,6 +328,20 @@ export default async function CeoCommandCenterPage({ searchParams }: { searchPar
                 )}
               </div>
             </DashboardGlassCard>
+
+            <div id="platform-settings">
+              <PlatformSettingsPanel initial={platformSettings} />
+            </div>
+
+            <div id="analytics">
+            <CeoAnalyticsCharts
+              signupsByDay={overview.analytics.signupsByDay}
+              businessesByDay={overview.analytics.businessesByDay}
+              viewsByDay={overview.analytics.viewsByDay}
+              topCities={overview.analytics.topCities}
+              topCategories={overview.analytics.topCategories}
+            />
+            </div>
           </div>
         </>
       )}

@@ -86,7 +86,7 @@ export default async function ExploreMarketplacePage({ searchParams }: { searchP
             </p>
           </div>
           <Link
-            href="/pricing"
+            href="/tarifs"
             className="inline-flex items-center gap-2 rounded-full border border-violet-400/35 bg-violet-500/15 px-4 py-2 text-sm font-semibold text-violet-100 shadow-[0_0_28px_rgba(139,92,246,0.2)] hover:bg-violet-500/25"
           >
             <Sparkles className="h-4 w-4" />

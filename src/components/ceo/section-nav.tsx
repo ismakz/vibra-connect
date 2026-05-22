@@ -5,13 +5,13 @@ import Link from "next/link";
 
 const links = [
   { href: "#kpis", label: "KPIs" },
-  { href: "#platform-settings", label: "Configuration" },
   { href: "#business", label: "Business" },
-  { href: "#users", label: "Utilisateurs" },
-  { href: "#agents", label: "Agents" },
   { href: "#payments", label: "Paiements" },
-  { href: "#analytics", label: "Analytics" },
+  { href: "#agents", label: "Agents" },
+  { href: "#users", label: "Utilisateurs" },
   { href: "#moderation", label: "Modération" },
+  { href: "#platform-settings", label: "Configuration" },
+  { href: "#analytics", label: "Statistiques" },
 ] as const;
 
 export function CeoSectionNav() {
@@ -20,7 +20,7 @@ export function CeoSectionNav() {
       initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      aria-label="Sections CEO Command Center"
+      aria-label="Sections pilotage plateforme"
       className="glass sticky top-4 z-30 mb-6 flex gap-1 overflow-x-auto rounded-2xl border border-violet-400/15 bg-white/[0.03] p-1.5 shadow-[0_0_40px_rgba(139,92,246,0.08)] sm:flex-wrap"
     >
       {links.map((l) => (

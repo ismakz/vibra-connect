@@ -64,11 +64,11 @@ export function ExploreMarketplaceFiltersForm({
       <div>
         <label className="mb-1 block text-xs font-medium text-white/55">Abonnement</label>
         <select name="plan" defaultValue={plan} className={selectFilter}>
-          <option value="all">Tous les plans</option>
-          <option value="free">Free</option>
+          <option value="all">Tous les abonnements</option>
+          <option value="free">Gratuit</option>
           <option value="standard">Standard</option>
           <option value="premium">Premium</option>
-          <option value="sponsored">Sponsoring actif</option>
+          <option value="sponsored">Sponsorisés</option>
         </select>
       </div>
 

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { getAuthSession } from "@/lib/auth";
+import { guardBusinessDashboard } from "@/lib/dashboard-guards";
 import { isPlatformCeoRole } from "@/lib/ceo-platform";
 import { prisma } from "@/lib/prisma";
 
@@ -14,28 +15,13 @@ async function countOwnedBusinesses(userId: string): Promise<number> {
   }
 }
 
-function logBusinessCreateGuardRedirect(params: { hasSession: boolean; role: string; path: string }) {
-  const enabled =
-    process.env.NODE_ENV !== "production" || process.env.BUSINESS_CREATE_GUARD_DEBUG === "1";
-  if (!enabled) return;
-  console.warn(
-    "[vc-business-create-guard]",
-    JSON.stringify({
-      ...params,
-      vercelEnv: process.env.VERCEL_ENV,
-    }),
-  );
+function logBusinessCreateGuardRedirect() {
+  /* logs désactivés */
 }
 
 function redirectToLogin(callbackPath: string): never {
   const safe = getSafeInternalCallbackUrl(callbackPath, "/dashboard/business");
   redirect(`/login?callbackUrl=${encodeURIComponent(safe)}`);
-}
-
-/** CEO / agent : pas d’espace business classique. */
-function redirectNonBusinessRoles(role: string | undefined) {
-  if (isPlatformCeoRole(role)) redirect("/dashboard/ceo");
-  if (role === "AGENT") redirect("/agent");
 }
 
 /**
@@ -45,7 +31,7 @@ function redirectNonBusinessRoles(role: string | undefined) {
 export async function guardBusinessCreatePage() {
   const session = await getAuthSession();
   if (!session) {
-    logBusinessCreateGuardRedirect({ hasSession: false, role: "none", path: "/dashboard/business/create" });
+    logBusinessCreateGuardRedirect();
     redirectToLogin("/dashboard/business/create");
   }
 
@@ -71,18 +57,8 @@ export async function guardBusinessCreatePage() {
 /**
  * Dashboard business propriétaire (index + sous-routes).
  */
-export async function guardBusinessOwnerArea(callbackPath = "/dashboard/business") {
-  const session = await getAuthSession();
-  if (!session) redirectToLogin(callbackPath);
-  redirectNonBusinessRoles(session.user.role);
-
-  if (session.user.role === "CLIENT") {
-    redirect("/dashboard/business/create");
-  }
-
-  if (session.user.role !== "BUSINESS_OWNER") {
-    redirect("/");
-  }
+export async function guardBusinessOwnerArea() {
+  const session = await guardBusinessDashboard();
 
   const n = await countOwnedBusinesses(session.user.id);
   if (n === 0) {

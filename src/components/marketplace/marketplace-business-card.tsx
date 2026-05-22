@@ -62,12 +62,13 @@ export function MarketplaceBusinessCard({
   const sponsored = isBusinessSponsored(featuredUntil, now);
   const hasPromotion = business.promotions.length > 0;
   const phone =
-    business.whatsappNumber ?? business.whatsapp ?? business.phoneNumber ?? business.phone ?? fallbackPhone(business.slug);
+    business.whatsappNumber ?? business.whatsapp ?? business.phoneNumber ?? business.phone ?? fallbackPhone();
+  const hasPhone = Boolean(phone?.trim());
   const urgent = business.urgentHighlight;
   const whatsappMessage = urgent
     ? `Bonjour, je vous contacte depuis VIBRA CONNECT pour votre vente en urgence « ${urgent.title} » chez ${business.name}.`
     : buildWhatsAppMessage(business.name);
-  const whatsappLink = buildWhatsAppLink(phone, whatsappMessage);
+  const whatsappLink = hasPhone ? buildWhatsAppLink(phone!, whatsappMessage) : "";
   const views = business._count.viewEvents;
   const premium = isPremiumBadgePlan(business.subscriptionPlan);
 
@@ -102,17 +103,19 @@ export function MarketplaceBusinessCard({
         <div className="absolute inset-0 bg-gradient-to-t from-[#050816]/90 via-[#050816]/40 to-transparent" />
 
         <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-          <div
-            className={[
-              "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold sm:text-xs",
-              openNow
-                ? "border border-emerald-400/35 bg-emerald-500/15 text-emerald-100"
-                : "border border-white/15 bg-black/40 text-white/65",
-            ].join(" ")}
-          >
-            <Clock className="h-3 w-3" />
-            {openNow ? "Ouvert" : "Fermé"}
-          </div>
+          {openNow !== null ? (
+            <div
+              className={[
+                "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold sm:text-xs",
+                openNow
+                  ? "border border-emerald-400/35 bg-emerald-500/15 text-emerald-100"
+                  : "border border-white/15 bg-black/40 text-white/65",
+              ].join(" ")}
+            >
+              <Clock className="h-3 w-3" />
+              {openNow ? "Ouvert" : "Fermé"}
+            </div>
+          ) : null}
           {premium && (
             <div className="inline-flex items-center gap-1 rounded-full border border-amber-300/35 bg-amber-500/15 px-2.5 py-1 text-[10px] font-semibold text-amber-100 sm:text-xs">
               <Sparkles className="h-3 w-3" />
@@ -198,16 +201,18 @@ export function MarketplaceBusinessCard({
           </div>
         )}
 
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <a
-            href={whatsappLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => void trackWhatsApp(business.id, whatsappLink)}
-            className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 to-green-400 px-3 py-2 text-sm font-semibold text-black shadow-[0_0_20px_rgba(16,185,129,0.35)] transition hover:brightness-110"
-          >
-            WhatsApp
-          </a>
+        <div className={`mt-4 grid gap-2 ${hasPhone ? "grid-cols-2" : "grid-cols-1"}`}>
+          {hasPhone ? (
+            <a
+              href={whatsappLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => void trackWhatsApp(business.id, whatsappLink)}
+              className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 to-green-400 px-3 py-2 text-sm font-semibold text-black shadow-[0_0_20px_rgba(16,185,129,0.35)] transition hover:brightness-110"
+            >
+              WhatsApp
+            </a>
+          ) : null}
           <Link
             href={`/b/${business.slug}`}
             className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/5 px-3 py-2 text-sm font-semibold text-cyan-100 transition hover:border-cyan-400/40 hover:bg-white/10"

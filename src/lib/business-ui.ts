@@ -31,11 +31,9 @@ export function isBusinessSponsored(featuredUntil: Date | null | undefined, now 
   return featuredUntil ? featuredUntil.getTime() > now.getTime() : false;
 }
 
+/** Sans horaires renseignés, on n'affiche pas d'état ouvert/fermé (évite données fictives). */
 export function isBusinessOpen(openingHours: string | null | undefined, now = new Date(), seed = "") {
-  if (!openingHours) {
-    const hour = now.getHours();
-    return hour >= 8 && hour <= 19 && hashStringToInt(seed || "vibra") % 2 === 0;
-  }
+  if (!openingHours?.trim()) return null;
 
   const text = openingHours.toLowerCase();
   if (text.includes("24/7") || text.includes("24h") || text.includes("toute la journée")) return true;
@@ -60,22 +58,19 @@ export function formatRating(value: number | null | undefined) {
   return value.toFixed(1);
 }
 
-export function fallbackPhone(slug: string) {
-  const h = hashStringToInt(slug);
-  const prefix = h % 3 === 0 ? "2438" : h % 3 === 1 ? "2439" : "2507";
-  const suffix = (h % 1000000000).toString().padStart(9, "0");
-  return `${prefix}${suffix}`.slice(0, 13);
+/** @deprecated Ne plus inventer de numéro — retourne null si absent. */
+export function fallbackPhone(): null {
+  return null;
 }
 
-export function fallbackRating(slug: string) {
-  const h = hashStringToInt(slug);
-  const value = 3.7 + (h % 130) / 100;
-  return Math.round(value * 10) / 10;
+/** @deprecated Ne plus inventer de note — utiliser les avis réels uniquement. */
+export function fallbackRating(): null {
+  return null;
 }
 
-export function distanceKm(slug: string) {
-  const h = hashStringToInt(slug);
-  return Math.round((0.5 + (h % 950) / 100) * 10) / 10;
+/** @deprecated Filtre « près de moi » désactivé tant que la géolocalisation n'est pas implémentée. */
+export function distanceKm(): null {
+  return null;
 }
 
 export function buildWhatsAppMessage(businessName: string) {

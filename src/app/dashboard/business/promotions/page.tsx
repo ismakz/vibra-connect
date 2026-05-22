@@ -6,6 +6,7 @@ import { ComingSoonButton } from "@/components/dashboard/coming-soon-button";
 import { DashboardEmptyState } from "@/components/dashboard/dashboard-empty-state";
 import { DashboardFilterBar } from "@/components/dashboard/dashboard-filter-bar";
 import { DashboardGlassCard } from "@/components/dashboard/dashboard-glass-card";
+import { BusinessDashboardNav } from "@/components/dashboard/business-dashboard-nav";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { getBusinessCoverImage, isDataImage } from "@/lib/business-ui";
 import { getAuthSession } from "@/lib/auth";
@@ -42,7 +43,7 @@ function formatDate(value: Date | null) {
 }
 
 export default async function BusinessPromotionsPage({ searchParams }: { searchParams: SearchParams }) {
-  const session = await guardBusinessOwnerArea("/dashboard/business/promotions");
+  const session = await guardBusinessOwnerArea();
 
   const params = await searchParams;
   const q = params.q?.trim() ?? "";
@@ -207,9 +208,11 @@ export default async function BusinessPromotionsPage({ searchParams }: { searchP
         }
       />
 
+      <BusinessDashboardNav />
+
       {!databaseAvailable && (
         <p className="mt-4 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-          Base de donnees indisponible pour le moment. Affichage en mode vitrine.
+          Base de données indisponible pour le moment. Affichage en mode vitrine.
         </p>
       )}
 

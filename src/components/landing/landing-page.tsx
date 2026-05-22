@@ -8,9 +8,6 @@ import { useMemo, useState } from "react";
 
 import {
   buildWhatsAppUrl,
-  distanceKm,
-  fallbackPhone,
-  fallbackRating,
   formatRating,
   getBusinessCoverImage,
   getBusinessLogoImage,
@@ -41,7 +38,7 @@ type Featured = {
   isSponsored: boolean;
 };
 
-type QuickFilter = "ALL" | "VERIFIED" | "PROMOTIONS" | "OPEN_NOW" | "NEAR_ME";
+type QuickFilter = "ALL" | "VERIFIED" | "PROMOTIONS" | "OPEN_NOW";
 
 function shouldUseUnoptimized(src: string) {
   return isDataImage(src);
@@ -53,7 +50,7 @@ function computeOpenNow(openingHours: string | null, slug: string, now: Date) {
 
 export function LandingPage({
   categories,
-  cities,
+  cities: _cities,
   featured,
   locationTree,
   publishBusinessHref,
@@ -75,87 +72,16 @@ export function LandingPage({
 
   const [businessFilter, setBusinessFilter] = useState<QuickFilter>("ALL");
 
-  const fallbackFeatured = useMemo<Featured[]>(() => {
-    const pickCategory = (i: number) => categories[i % Math.max(1, categories.length)];
-    const pickCity = (i: number) => cities[i % Math.max(1, cities.length)];
-
-    const base = [
-      {
-        name: "Café Kin Café",
-        description: "Café, boissons chaudes, pâtisseries et service de livraison locale.",
-        openingHours: "07:30-19:00",
-        verified: true,
-        isSponsored: true,
-      },
-      {
-        name: "Boutique Mode LUX",
-        description: "Vêtements tendance, chaussures et accessoires pour toute la famille.",
-        openingHours: "09:00-20:00",
-        verified: true,
-        isSponsored: false,
-      },
-      {
-        name: "Goma Tech Réparations",
-        description: "Réparation téléphones, accessoires, recharges et installation services.",
-        openingHours: "08:30-18:30",
-        verified: false,
-        isSponsored: true,
-      },
-      {
-        name: "Pharmacie Saint-Luc",
-        description: "Médicaments essentiels, conseils santé et permanence selon horaires.",
-        openingHours: "08:00-17:30",
-        verified: true,
-        isSponsored: false,
-      },
-      {
-        name: "Garage Atlas Auto",
-        description: "Mécanique générale, diagnostic et pièces détachées de qualité.",
-        openingHours: "08:00-18:00",
-        verified: false,
-        isSponsored: false,
-      },
-      {
-        name: "Hôtel Horizon Confort",
-        description: "Chambres confortables, services et accompagnement pour séjours d’affaires.",
-        openingHours: "24/7",
-        verified: true,
-        isSponsored: false,
-      },
-    ];
-
-    return base.map((item, i) => {
-      const city = pickCity(i);
-      const category = pickCategory(i + 2);
-      return {
-        id: `fallback-${i}`,
-        slug: slugify(item.name),
-        name: item.name,
-        description: item.description,
-        verified: item.verified,
-        isSponsored: item.isSponsored,
-        city: { name: city?.name ?? "Kinshasa", slug: city?.slug ?? "kinshasa" },
-        category: { name: category?.name ?? "Services", slug: category?.slug ?? "services" },
-        bannerUrl: null,
-        logoUrl: null,
-        openingHours: item.openingHours,
-        contactPhone: null,
-        rating: null,
-      };
-    });
-  }, [cities, categories]);
-
-  const baseBusinesses = featured.length > 0 ? featured : fallbackFeatured;
+  const baseBusinesses = featured;
 
   const now = new Date();
   const enrichedBusinesses = useMemo(() => {
     return baseBusinesses.map((b) => {
-      const ratingFinal = typeof b.rating === "number" ? b.rating : fallbackRating(b.slug);
-      const distance = distanceKm(b.slug);
+      const ratingFinal = typeof b.rating === "number" ? b.rating : null;
       const openNow = computeOpenNow(b.openingHours, b.slug, now);
 
-      const phone = b.contactPhone ?? fallbackPhone(b.slug);
-      const whatsappLink = buildWhatsAppUrl(phone, b.name);
+      const phone = b.contactPhone?.trim() ?? null;
+      const whatsappLink = phone ? buildWhatsAppUrl(phone, b.name) : null;
 
       const coverSrc = getBusinessCoverImage(b);
       const logoSrc = getBusinessLogoImage(b);
@@ -165,7 +91,6 @@ export function LandingPage({
       return {
         ...b,
         ratingFinal,
-        distanceKm: distance,
         openNow,
         whatsappLink,
         coverSrc,
@@ -183,9 +108,7 @@ export function LandingPage({
       case "PROMOTIONS":
         return enrichedBusinesses.filter((b) => b.isSponsored);
       case "OPEN_NOW":
-        return enrichedBusinesses.filter((b) => b.openNow);
-      case "NEAR_ME":
-        return enrichedBusinesses.filter((b) => b.distanceKm <= 5);
+        return enrichedBusinesses.filter((b) => b.openNow === true);
       case "ALL":
       default:
         return enrichedBusinesses;
@@ -197,7 +120,7 @@ export function LandingPage({
       <section className="mx-auto grid max-w-7xl gap-12 scroll-mt-28 px-4 pb-16 pt-24 sm:pt-28 md:scroll-mt-32 lg:grid-cols-2 lg:items-center lg:pt-32">
         <div>
           <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="inline-flex rounded-full border border-cyan-400/30 bg-cyan-500/10 px-4 py-1 text-xs text-cyan-300">
-            Bizaflow Ready • Bizapay intégré • WhatsApp First
+            Marketplace · Paiements Bizapay · Contact WhatsApp
           </motion.p>
           <motion.h1
             initial={{ opacity: 0, y: 18 }}
@@ -205,10 +128,10 @@ export function LandingPage({
             transition={{ delay: 0.1 }}
             className="mt-5 scroll-mt-32 text-4xl font-black leading-[1.12] tracking-tight sm:mt-6 md:text-5xl md:leading-[1.1] lg:text-6xl"
           >
-            Le marché digital nouvelle génération pour les business.
+            Trouvez et publiez des commerces près de chez vous.
           </motion.h1>
-          <p className="mt-5 max-w-xl text-white/75">Publiez votre commerce, attirez des clients, recevez des paiements et connectez-vous à l’écosystème Bizaflow.</p>
-          <p className="mt-3 max-w-xl text-sm text-slate-400">Restaurants, boutiques, hôtels, cybercafés, pharmacies, garages, immobilier, services et entrepreneurs locaux peuvent maintenant être visibles dans toute leur ville.</p>
+          <p className="mt-5 max-w-xl text-white/75">Restaurants, boutiques, services et entrepreneurs : une vitrine simple pour être trouvé et contacté.</p>
+          <p className="mt-3 max-w-xl text-sm text-slate-400">Recherchez par ville, explorez la marketplace ou publiez votre business en quelques minutes.</p>
           <div className="mt-6 w-full max-w-4xl space-y-3 sm:space-y-4">
             <LandingHeroSearch locationTree={locationTree} />
             <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
@@ -243,12 +166,12 @@ export function LandingPage({
           <div className="absolute -bottom-6 -right-10 h-40 w-40 rounded-full bg-cyan-500/25 blur-3xl" />
           <div className="glass rounded-3xl p-5">
             <div className="rounded-2xl border border-white/10 bg-[#0b1330] p-4">
-              <p className="text-xs text-cyan-300">Marketplace live analytics</p>
+              <p className="text-xs text-cyan-300">Pour les propriétaires de business</p>
               <div className="mt-3 grid grid-cols-2 gap-3">
-                <div className="rounded-xl bg-white/5 p-3 text-sm">Vues & conversion</div>
-                <div className="rounded-xl bg-white/5 p-3 text-sm">Clics WhatsApp trackés</div>
-                <div className="rounded-xl bg-white/5 p-3 text-sm">Paiements Bizapay</div>
-                <div className="rounded-xl bg-white/5 p-3 text-sm">Réseau agents Bizaflow</div>
+                <div className="rounded-xl bg-white/5 p-3 text-sm">Profil visible</div>
+                <div className="rounded-xl bg-white/5 p-3 text-sm">Contact WhatsApp</div>
+                <div className="rounded-xl bg-white/5 p-3 text-sm">Offres & promotions</div>
+                <div className="rounded-xl bg-white/5 p-3 text-sm">Abonnement Bizapay</div>
               </div>
             </div>
           </div>
@@ -301,8 +224,7 @@ export function LandingPage({
                 ["ALL", "Tous"],
                 ["VERIFIED", "Vérifiés"],
                 ["PROMOTIONS", "Promotions"],
-                ["OPEN_NOW", "Ouverts"],
-                ["NEAR_ME", "Près de moi"],
+                ["OPEN_NOW", "Ouverts maintenant"],
               ] as const
             ).map(([id, label]) => {
               const active = businessFilter === id;
@@ -324,7 +246,18 @@ export function LandingPage({
             })}
           </div>
 
-          {filteredBusinesses.length === 0 ? (
+          {baseBusinesses.length === 0 ? (
+            <div className="glass mt-4 rounded-2xl p-6 text-center text-sm text-white/75">
+              <p className="font-medium text-white">Aucun business mis en avant pour le moment.</p>
+              <p className="mt-2">Explorez la marketplace ou publiez le vôtre.</p>
+              <Link
+                href={exploreMarketHref}
+                className="mt-4 inline-flex rounded-full bg-gradient-to-r from-violet-600 to-cyan-500 px-5 py-2 font-semibold text-black"
+              >
+                Explorer la marketplace
+              </Link>
+            </div>
+          ) : filteredBusinesses.length === 0 ? (
             <div className="glass mt-4 rounded-2xl p-4 text-sm text-white/80">
               Aucun résultat pour ce filtre.
               <div className="mt-3">
@@ -355,19 +288,21 @@ export function LandingPage({
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#050816]/85 via-[#050816]/35 to-transparent" />
 
-                    <div className="absolute left-3 top-3">
-                      <div
-                        className={[
-                          "inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold",
-                          b.openNow
-                            ? "border border-green-400/30 bg-green-500/15 text-green-200"
-                            : "border border-white/15 bg-white/5 text-white/60",
-                        ].join(" ")}
-                      >
-                        <Clock className="h-3 w-3" />
-                        {b.openNow ? "Ouvert maintenant" : "Fermé"}
+                    {b.openNow !== null ? (
+                      <div className="absolute left-3 top-3">
+                        <div
+                          className={[
+                            "inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold",
+                            b.openNow
+                              ? "border border-green-400/30 bg-green-500/15 text-green-200"
+                              : "border border-white/15 bg-white/5 text-white/60",
+                          ].join(" ")}
+                        >
+                          <Clock className="h-3 w-3" />
+                          {b.openNow ? "Ouvert" : "Fermé"}
+                        </div>
                       </div>
-                    </div>
+                    ) : null}
 
                     {b.isSponsored && (
                       <div className="absolute right-3 top-3">
@@ -419,20 +354,22 @@ export function LandingPage({
 
                     <p className="mt-3 line-clamp-2 text-sm text-white/70">{b.description}</p>
 
-                    <div className="mt-4 grid grid-cols-2 gap-2">
-                      <a
-                        href={b.whatsappLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center rounded-full bg-green-500 px-3 py-2 text-sm font-semibold text-black transition hover:bg-green-400"
-                      >
-                        WhatsApp
-                      </a>
+                    <div className={`mt-4 grid gap-2 ${b.whatsappLink ? "grid-cols-2" : "grid-cols-1"}`}>
+                      {b.whatsappLink ? (
+                        <a
+                          href={b.whatsappLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center rounded-full bg-green-500 px-3 py-2 text-sm font-semibold text-black transition hover:bg-green-400"
+                        >
+                          WhatsApp
+                        </a>
+                      ) : null}
                       <Link
                         href={`/b/${b.slug}`}
                         className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/5 px-3 py-2 text-sm font-semibold text-cyan-200 transition hover:border-cyan-300/40 hover:bg-white/10"
                       >
-                        Voir
+                        Voir le profil
                       </Link>
                     </div>
                   </div>

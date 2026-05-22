@@ -33,6 +33,19 @@ export function navRoleBadge(role: UserRole | string): string {
 export function dashboardHrefForRole(role: UserRole | string): string {
   if (role === "SUPER_ADMIN") return "/dashboard/ceo";
   if (role === "BUSINESS_OWNER") return "/dashboard/business";
-  if (role === "AGENT") return "/dashboard/agent";
-  return EXPLORE_MARKET_HREF;
+  if (role === "AGENT") return "/agent";
+  return "/profile";
+}
+
+/** Libellé du lien « Business » dans la navigation (évite doublon avec le CTA). */
+export function navBusinessLinkLabel(
+  role: UserRole | string | null | undefined,
+  isAuthenticated: boolean,
+): string | null {
+  if (!isAuthenticated || !role) return null;
+  if (role === "BUSINESS_OWNER") return "Mon business";
+  if (isPlatformCeoRole(role)) return "Pilotage";
+  if (role === "AGENT") return "Espace agent";
+  if (role === "CLIENT") return null;
+  return null;
 }
